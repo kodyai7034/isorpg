@@ -46,8 +46,16 @@ namespace IsoRPG.Battle.States
                 var undone = ctx.CommandHistory.Undo();
                 ctx.TurnCommandCount--;
 
-                if (undone is MoveCommand)
-                    ctx.ActiveUnitMoved = false;
+                // Reset action flags based on undone command type
+                switch (undone)
+                {
+                    case MoveCommand:
+                        ctx.ActiveUnitMoved = false;
+                        break;
+                    // Future: case AttackCommand: ctx.ActiveUnitActed = false; break;
+                    // WaitCommand undo is a no-op on flags (Wait transitions immediately to EndTurn,
+                    // so it's never undoable from SelectActionState in normal flow)
+                }
 
                 Debug.Log($"[Undo] Reverted: {undone?.Description}");
                 // Stay in SelectActionState — re-enter to refresh prompt

@@ -37,7 +37,7 @@ namespace IsoRPG.Battle.States
                 // Subscribe to animation completion
                 // For now, use a simple frame-delay approach since UnitView.AnimateMovement
                 // updates position via the coroutine. We check distance to destination.
-                unitView.StartCoroutine(WaitForAnimation(unitView, ctx, machine));
+                unitView.StartCoroutine(WaitForAnimation(unitView, ctx));
             }
             else
             {
@@ -57,15 +57,15 @@ namespace IsoRPG.Battle.States
         public void Exit(BattleContext ctx) { }
 
         private System.Collections.IEnumerator WaitForAnimation(
-            Units.UnitView view, BattleContext ctx, IStateMachine<BattleContext> machine)
+            Units.UnitView view, BattleContext ctx)
         {
-            // Wait until the view reaches the destination
             var destWorld = IsoMath.GridToWorld(
                 _command.Path[_command.Path.Count - 1],
                 ctx.Map.GetElevation(_command.Path[_command.Path.Count - 1]));
             destWorld.y += IsoMath.TileHeightHalf * 0.5f;
 
-            while (Vector3.Distance(view.transform.position, destWorld) > 0.05f)
+            // Guard against destroyed view (e.g., unit killed by trap/reaction mid-move)
+            while (view != null && Vector3.Distance(view.transform.position, destWorld) > 0.05f)
             {
                 yield return null;
             }

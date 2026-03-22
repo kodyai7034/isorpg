@@ -57,7 +57,7 @@ namespace IsoRPG.Battle.States
 
         public void Exit(BattleContext ctx)
         {
-            // Ensure overlays are cleared if we exit unexpectedly
+            ctx.MovementController.ClearOverlays(ctx.Grid);
         }
     }
 }
