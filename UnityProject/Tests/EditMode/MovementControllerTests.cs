@@ -27,64 +27,138 @@ namespace IsoRPG.Tests
         }
 
         [Test]
-        public void ShowMovementRange_ReturnsResult()
+        public void IsShowingRange_FalseBeforeShow()
         {
-            // Can't test grid overlay without MonoBehaviour, but can test result
-            var result = Pathfinder.GetReachableTiles(_map, _unit, _allUnits);
-            Assert.IsNotNull(result);
-            Assert.IsTrue(result.CanMoveTo(new Vector2Int(3, 4))); // 1 tile away
-            Assert.IsTrue(result.CanMoveTo(new Vector2Int(3, 7))); // 4 tiles away
-            Assert.IsFalse(result.CanMoveTo(new Vector2Int(3, 8))); // 5 tiles = out of range
+            Assert.IsFalse(_controller.IsShowingRange);
+            Assert.IsNull(_controller.CurrentResult);
         }
 
         [Test]
-        public void CreateMoveCommand_ValidDestination_ReturnsCommand()
+        public void CreateMoveCommand_WithoutShowingRange_ReturnsNull()
         {
+            // Controller has no result — should return null
+            var cmd = _controller.CreateMoveCommand(_unit, new Vector2Int(4, 3), null);
+            Assert.IsNull(cmd);
+        }
+
+        [Test]
+        public void GetMoveCostTo_WithoutRange_ReturnsNegative()
+        {
+            Assert.AreEqual(-1, _controller.GetMoveCostTo(new Vector2Int(4, 3)));
+        }
+
+        [Test]
+        public void CreateMoveCommand_AfterManualResult_ProducesValidCommand()
+        {
+            // Simulate what ShowMovementRange does (without MonoBehaviour grid)
             var result = Pathfinder.GetReachableTiles(_map, _unit, _allUnits);
 
-            // Simulate what MovementController does internally
-            var path = Pathfinder.ReconstructPath(result, _unit.GridPosition, new Vector2Int(5, 3));
+            // Use reflection-free approach: directly test the Pathfinder + MoveCommand integration
+            var dest = new Vector2Int(5, 3);
+            Assert.IsTrue(result.CanMoveTo(dest));
+
+            var path = Pathfinder.ReconstructPath(result, _unit.GridPosition, dest);
             Assert.IsNotNull(path);
 
-            var cmd = new MoveCommand(_unit, new Vector2Int(5, 3), path, 42);
+            var rng = new GameRng(42);
+            var cmd = new MoveCommand(_unit, dest, path, rng.Seed);
+
             Assert.AreEqual("Test moves to (5,3)", cmd.Description);
+            Assert.AreEqual(_unit.Id, cmd.ActorId);
+
+            // Execute and verify
+            cmd.Execute();
+            Assert.AreEqual(dest, _unit.GridPosition);
+
+            // Undo and verify
+            cmd.Undo();
+            Assert.AreEqual(new Vector2Int(3, 3), _unit.GridPosition);
         }
 
         [Test]
-        public void GetMoveCostTo_ReturnsCorrectCost()
+        public void PathfindingResult_CostAccuracy()
         {
             var result = Pathfinder.GetReachableTiles(_map, _unit, _allUnits);
 
-            // Adjacent tile should cost 1
-            Assert.IsTrue(result.StoppableTiles.TryGetValue(new Vector2Int(4, 3), out var node));
-            Assert.AreEqual(1, node.CostSoFar);
+            // Adjacent tile: cost 1
+            Assert.IsTrue(result.StoppableTiles.TryGetValue(new Vector2Int(4, 3), out var adj));
+            Assert.AreEqual(1, adj.CostSoFar);
 
-            // 3 tiles away should cost 3
-            Assert.IsTrue(result.StoppableTiles.TryGetValue(new Vector2Int(6, 3), out var node2));
-            Assert.AreEqual(3, node2.CostSoFar);
+            // 3 tiles away: cost 3
+            Assert.IsTrue(result.StoppableTiles.TryGetValue(new Vector2Int(6, 3), out var far));
+            Assert.AreEqual(3, far.CostSoFar);
+
+            // 4 tiles away: cost 4 (at boundary)
+            Assert.IsTrue(result.StoppableTiles.TryGetValue(new Vector2Int(7, 3), out var edge));
+            Assert.AreEqual(4, edge.CostSoFar);
+
+            // 5 tiles away: out of range
+            Assert.IsFalse(result.CanMoveTo(new Vector2Int(3, 8)));
         }
 
         [Test]
-        public void PathPreview_ReturnsPathToReachableTile()
+        public void PathPreview_ReachableTile_ReturnsPath()
         {
             var result = Pathfinder.GetReachableTiles(_map, _unit, _allUnits);
             var dest = new Vector2Int(5, 5);
 
-            if (result.CanMoveTo(dest))
-            {
-                var path = Pathfinder.ReconstructPath(result, _unit.GridPosition, dest);
-                Assert.IsNotNull(path);
-                Assert.AreEqual(dest, path[path.Count - 1]);
-            }
+            // (5,5) is Manhattan distance 4 from (3,3) — exactly at move range
+            Assert.IsTrue(result.CanMoveTo(dest),
+                "Destination should be reachable on flat 8x8 map with Move=4");
+
+            var path = Pathfinder.ReconstructPath(result, _unit.GridPosition, dest);
+            Assert.IsNotNull(path);
+            Assert.AreEqual(dest, path[path.Count - 1]);
+            Assert.Greater(path.Count, 0);
         }
 
         [Test]
         public void PathPreview_UnreachableTile_ReturnsNull()
         {
             var result = Pathfinder.GetReachableTiles(_map, _unit, _allUnits);
-            // 10 tiles away — definitely out of move range 4
-            var path = Pathfinder.ReconstructPath(result, _unit.GridPosition, new Vector2Int(3, 13));
-            Assert.IsNull(path); // not in visited set
+            var path = Pathfinder.ReconstructPath(result, _unit.GridPosition, new Vector2Int(0, 7));
+            // (0,7) is Manhattan distance 7 from (3,3) — out of Move=4 range
+            Assert.IsNull(path);
+        }
+
+        [Test]
+        public void AllyPassThrough_PathReconstructsCorrectly()
+        {
+            // Place ally blocking the direct path
+            var ally = new UnitInstance("Ally", 0, 1, new Vector2Int(4, 3));
+            ally.SetStats(new ComputedStats { Move = 4, Jump = 3, Speed = 5, MaxHP = 100 });
+            ally.SetHP(100);
+            var units = new List<UnitInstance> { _unit, ally };
+
+            var result = Pathfinder.GetReachableTiles(_map, _unit, units);
+
+            // Can't stop on ally's tile
+            Assert.IsFalse(result.CanMoveTo(new Vector2Int(4, 3)));
+
+            // CAN reach tile beyond ally (path goes through ally)
+            Assert.IsTrue(result.CanMoveTo(new Vector2Int(5, 3)));
+
+            // Path reconstruction should work through the ally tile
+            var path = Pathfinder.ReconstructPath(result, _unit.GridPosition, new Vector2Int(5, 3));
+            Assert.IsNotNull(path, "Path through ally-occupied tile should reconstruct successfully");
+            Assert.AreEqual(new Vector2Int(5, 3), path[path.Count - 1]);
+        }
+
+        [Test]
+        public void MoveCommand_ViaCommandHistory_FullUndoFlow()
+        {
+            var history = new CommandHistory();
+            var result = Pathfinder.GetReachableTiles(_map, _unit, _allUnits);
+            var dest = new Vector2Int(5, 5);
+            var path = Pathfinder.ReconstructPath(result, _unit.GridPosition, dest);
+
+            var cmd = new MoveCommand(_unit, dest, path, 0);
+            history.ExecuteCommand(cmd);
+            Assert.AreEqual(dest, _unit.GridPosition);
+
+            history.Undo();
+            Assert.AreEqual(new Vector2Int(3, 3), _unit.GridPosition);
+            Assert.AreEqual(0, history.Count);
         }
     }
 
@@ -106,10 +180,9 @@ namespace IsoRPG.Tests
         }
 
         [Test]
-        public void IgnoreHeight_CanTraverseCliffsWithin()
+        public void IgnoreHeight_CanTraverseCliffs()
         {
             var map = MapGenerator.CreateFlatMap(5, 5);
-            // Create a cliff at (2,2) — elevation 10
             map.Tiles[2 * 5 + 2] = TileData.Create(2, 2, 10, TerrainType.Stone);
 
             var unit = new UnitInstance("Test", 0, 1, new Vector2Int(2, 1));
@@ -122,7 +195,7 @@ namespace IsoRPG.Tests
                 unit.Team, new List<UnitInstance> { unit });
             Assert.IsFalse(normalResult.CanMoveTo(new Vector2Int(2, 2)));
 
-            // With IgnoreHeight: should reach it
+            // With IgnoreHeight
             var flyParams = MovementParams.FromUnit(unit);
             flyParams.IgnoreHeight = true;
             var flyResult = Pathfinder.GetReachableTiles(
@@ -135,7 +208,6 @@ namespace IsoRPG.Tests
         public void CanFly_IgnoresTerrainCost()
         {
             var map = MapGenerator.CreateFlatMap(5, 5);
-            // Fill row 2 with forest (moveCost 2)
             for (int x = 0; x < 5; x++)
                 map.Tiles[2 * 5 + x] = TileData.Create(x, 2, 0, TerrainType.Forest);
 
@@ -143,13 +215,11 @@ namespace IsoRPG.Tests
             unit.SetStats(new ComputedStats { Move = 3, Jump = 3, Speed = 7, MaxHP = 100 });
             unit.SetHP(100);
 
-            // Without fly: forest costs 2, so reaching y=3 costs 1+2+1=4 > move range 3
             var normalResult = Pathfinder.GetReachableTiles(
                 map, unit.GridPosition, MovementParams.FromUnit(unit),
                 unit.Team, new List<UnitInstance> { unit });
             Assert.IsFalse(normalResult.CanMoveTo(new Vector2Int(2, 3)));
 
-            // With fly: all tiles cost 1, so y=3 costs 3 = exactly move range
             var flyParams = MovementParams.FromUnit(unit);
             flyParams.CanFly = true;
             var flyResult = Pathfinder.GetReachableTiles(
@@ -162,7 +232,6 @@ namespace IsoRPG.Tests
         public void CanTeleport_IgnoresObstacles()
         {
             var map = MapGenerator.CreateFlatMap(8, 8);
-            // Wall of water blocking direct path
             for (int x = 0; x < 8; x++)
                 map.Tiles[3 * 8 + x] = TileData.Create(x, 3, 0, TerrainType.Water);
 
@@ -170,13 +239,11 @@ namespace IsoRPG.Tests
             unit.SetStats(new ComputedStats { Move = 4, Jump = 3, Speed = 7, MaxHP = 100 });
             unit.SetHP(100);
 
-            // Without teleport: can't cross water wall
             var normalResult = Pathfinder.GetReachableTiles(
                 map, unit.GridPosition, MovementParams.FromUnit(unit),
                 unit.Team, new List<UnitInstance> { unit });
             Assert.IsFalse(normalResult.CanMoveTo(new Vector2Int(4, 5)));
 
-            // With teleport: can reach any walkable tile in Manhattan range
             var teleParams = MovementParams.FromUnit(unit);
             teleParams.CanTeleport = true;
             var teleResult = Pathfinder.GetReachableTiles(
@@ -193,12 +260,9 @@ namespace IsoRPG.Tests
             unit.SetStats(new ComputedStats { Move = 3, Jump = 3, Speed = 7, MaxHP = 100 });
             unit.SetHP(100);
 
-            // Base move 3: can't reach 4 tiles away
             var baseResult = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
             Assert.IsFalse(baseResult.CanMoveTo(new Vector2Int(5, 9)));
 
-            // Move+1 = 4: still can't reach 4 tiles
-            // Move+2 = 5: CAN reach 4 tiles away (5,9 is 4 away from 5,5)
             var extendedParams = MovementParams.FromUnit(unit);
             extendedParams.MoveRange = 5;
             var extResult = Pathfinder.GetReachableTiles(
