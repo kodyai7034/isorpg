@@ -178,10 +178,20 @@ namespace IsoRPG.Battle
             // Restore caster MP
             _caster.SetMP(_casterMPBefore);
 
-            // Remove applied status effect
+            // Remove applied status effect and restore any status that was replaced
             if (_appliedStatus && _appliedStatusId.IsValid)
             {
                 _target.RemoveStatus(_appliedStatusId);
+            }
+
+            // Restore any pre-existing statuses that were replaced by AddStatus (refresh)
+            foreach (var snapshot in _targetStatusBefore)
+            {
+                if (!_target.HasStatus(snapshot.Type))
+                {
+                    _target.AddStatus(new StatusEffectInstance(
+                        snapshot.Id, snapshot.Type, snapshot.Duration));
+                }
             }
 
             // Restore RNG seed

@@ -31,18 +31,7 @@ namespace IsoRPG.Battle.States
             ctx.TurnCommandCount++;
             ctx.ActiveUnitActed = true;
 
-            // Log result
-            if (cmd.DidHit)
-            {
-                if (_ability.IsHealing)
-                    Debug.Log($"[Action] {cmd.Description}");
-                else
-                    Debug.Log($"[Action] {cmd.Description}");
-            }
-            else
-            {
-                Debug.Log($"[Action] {cmd.Description}");
-            }
+            Debug.Log($"[Action] {cmd.Description}");
 
             _displayTimer = DisplayDuration;
         }
