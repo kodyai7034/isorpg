@@ -110,25 +110,86 @@ namespace IsoRPG.Battle
             Debug.Log($"[BattleManager] Spawned {_context.AllUnits.Count} units with {defaultAbilities.Length} abilities");
         }
 
+        private static Sprite _unitFallbackSprite;
+
         private void SpawnUnit(string name, int team, int level, Vector2Int position)
         {
             var unit = new UnitInstance(name, team, level, position);
             _context.AllUnits.Add(unit);
             _context.Registry.Register(unit);
 
-            // Create view
+            // Create view — works with or without prefab
+            var worldPos = IsoMath.GridToWorld(position, _context.Map.GetElevation(position));
+            worldPos.y += IsoMath.TileHeightHalf * 0.5f; // offset above tile
+
+            GameObject go;
             if (unitPrefab != null)
             {
-                var worldPos = IsoMath.GridToWorld(position, _context.Map.GetElevation(position));
-                var go = Instantiate(unitPrefab, worldPos, Quaternion.identity, transform);
-
-                var view = go.GetComponent<UnitView>();
-                if (view == null)
-                    view = go.AddComponent<UnitView>();
-
-                view.Initialize(unit, _context.Map);
-                _context.UnitViews[unit.Id] = view;
+                go = Instantiate(unitPrefab, worldPos, Quaternion.identity, transform);
             }
+            else
+            {
+                go = new GameObject(name);
+                go.AddComponent<SpriteRenderer>();
+                go.transform.SetParent(transform);
+                go.transform.position = worldPos;
+            }
+
+            // Ensure sprite exists
+            var sr = go.GetComponent<SpriteRenderer>();
+            if (sr != null && sr.sprite == null)
+            {
+                if (_unitFallbackSprite == null)
+                    _unitFallbackSprite = CreateUnitFallbackSprite();
+                sr.sprite = _unitFallbackSprite;
+            }
+
+            var view = go.GetComponent<UnitView>();
+            if (view == null)
+                view = go.AddComponent<UnitView>();
+
+            view.Initialize(unit, _context.Map);
+            _context.UnitViews[unit.Id] = view;
+        }
+
+        private static Sprite CreateUnitFallbackSprite()
+        {
+            int s = 16;
+            var tex = new Texture2D(s, s, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
+            var px = new Color32[s * s];
+            for (int i = 0; i < px.Length; i++) px[i] = new Color32(0, 0, 0, 0);
+
+            var body = new Color32(200, 200, 220, 255);
+            var outline = new Color32(40, 40, 60, 255);
+
+            // Simple character shape
+            // Head
+            for (int y = 12; y < 15; y++)
+                for (int x = 6; x < 10; x++)
+                    px[y * s + x] = body;
+            // Body
+            for (int y = 5; y < 12; y++)
+                for (int x = 5; x < 11; x++)
+                    px[y * s + x] = body;
+            // Legs
+            for (int y = 1; y < 5; y++) { px[y * s + 6] = body; px[y * s + 7] = body; px[y * s + 8] = body; px[y * s + 9] = body; }
+            // Outline
+            for (int y = 0; y < s; y++)
+                for (int x = 0; x < s; x++)
+                {
+                    if (px[y * s + x].a == 0) continue;
+                    // Check if any neighbor is transparent → outline
+                    bool isEdge = false;
+                    if (x > 0 && px[y * s + x - 1].a == 0) isEdge = true;
+                    if (x < s - 1 && px[y * s + x + 1].a == 0) isEdge = true;
+                    if (y > 0 && px[(y - 1) * s + x].a == 0) isEdge = true;
+                    if (y < s - 1 && px[(y + 1) * s + x].a == 0) isEdge = true;
+                    if (isEdge) px[y * s + x] = outline;
+                }
+
+            tex.SetPixels32(px);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.3f), 32);
         }
 
         /// <summary>

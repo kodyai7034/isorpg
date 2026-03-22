@@ -67,14 +67,15 @@ namespace IsoRPG.Map
             HandleMouseClick();
         }
 
+        private Sprite _fallbackSprite;
+
         private void BuildMap()
         {
             if (mapData == null || mapData.Tiles == null) return;
-            if (tilePrefab == null)
-            {
-                Debug.LogError("[IsometricGrid] Tile prefab is not assigned.");
-                return;
-            }
+
+            // Create fallback sprite if no prefab or prefab has no sprite
+            if (_fallbackSprite == null)
+                _fallbackSprite = CreateFallbackDiamondSprite();
 
             _tileViews.Clear();
 
@@ -85,12 +86,27 @@ namespace IsoRPG.Map
                     if (!mapData.TryGetTile(x, y, out var tileData))
                         continue;
 
-                    var worldPos = IsoMath.GridToWorld(x, y, tileData.Elevation);
-                    var tileObj = Instantiate(tilePrefab, worldPos, Quaternion.identity, transform);
+                    GameObject tileObj;
+                    if (tilePrefab != null)
+                    {
+                        var worldPos = IsoMath.GridToWorld(x, y, tileData.Elevation);
+                        tileObj = Instantiate(tilePrefab, worldPos, Quaternion.identity, transform);
+                    }
+                    else
+                    {
+                        tileObj = new GameObject();
+                        tileObj.AddComponent<SpriteRenderer>();
+                        tileObj.transform.SetParent(transform);
+                    }
 
                     var tileView = tileObj.GetComponent<TileView>();
                     if (tileView == null)
                         tileView = tileObj.AddComponent<TileView>();
+
+                    // Ensure sprite exists — use fallback if prefab sprite is null
+                    var sr = tileObj.GetComponent<SpriteRenderer>();
+                    if (sr != null && sr.sprite == null)
+                        sr.sprite = _fallbackSprite;
 
                     tileView.Initialize(tileData);
                     _tileViews[new Vector2Int(x, y)] = tileView;
@@ -98,6 +114,56 @@ namespace IsoRPG.Map
             }
 
             Debug.Log($"[IsometricGrid] Loaded '{mapData.MapName}' ({mapData.Width}x{mapData.Height}, {_tileViews.Count} tiles)");
+        }
+
+        /// <summary>
+        /// Creates a simple diamond sprite at runtime as fallback when no tile sprite asset exists.
+        /// </summary>
+        private static Sprite CreateFallbackDiamondSprite()
+        {
+            int s = 64;
+            var tex = new Texture2D(s, s, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point };
+            var px = new Color32[s * s];
+            var clear = new Color32(0, 0, 0, 0);
+            for (int i = 0; i < px.Length; i++) px[i] = clear;
+
+            var fill = new Color32(200, 200, 200, 255);
+            var edge = new Color32(100, 100, 100, 255);
+
+            // Draw isometric diamond (top face)
+            int cx = 32, cy = 48;
+            for (int row = 0; row <= 15; row++)
+            {
+                int w = row * 2;
+                for (int dx = -w; dx <= w; dx++)
+                {
+                    SetPx(px, s, cx + dx, cy - row, fill);
+                    if (row < 15) SetPx(px, s, cx + dx, cy - 16 - row + 16, fill);
+                }
+                SetPx(px, s, cx - w, cy - row, edge);
+                SetPx(px, s, cx + w, cy - row, edge);
+            }
+
+            // Draw side faces
+            for (int row = 0; row < 16; row++)
+            {
+                int y = 32 - row;
+                int half = 30 - row * 2;
+                if (half < 0) half = 0;
+                for (int dx = -half; dx < 0; dx++)
+                    SetPx(px, s, cx + dx, y, new Color32(160, 160, 160, 255));
+                for (int dx = 0; dx <= half; dx++)
+                    SetPx(px, s, cx + dx, y, new Color32(130, 130, 130, 255));
+            }
+
+            tex.SetPixels32(px);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, s, s), new Vector2(0.5f, 0.75f), 64);
+        }
+
+        private static void SetPx(Color32[] px, int s, int x, int y, Color32 c)
+        {
+            if (x >= 0 && x < s && y >= 0 && y < s) px[y * s + x] = c;
         }
 
         private void ClearMap()
