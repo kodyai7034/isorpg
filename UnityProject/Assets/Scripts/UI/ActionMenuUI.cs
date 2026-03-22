@@ -38,16 +38,15 @@ namespace IsoRPG.UI
             AddHoverFeedback(waitButton);
             AddHoverFeedback(undoButton);
 
+            // Subscribe BEFORE Hide — events must persist even when inactive
+            // so the menu can receive ShowActionMenu and reactivate itself
+            GameEvents.ShowActionMenu.Subscribe(OnShowRequested);
+            GameEvents.HideActionMenu.Subscribe(OnHideRequested);
+
             Hide();
         }
 
-        private void OnEnable()
-        {
-            GameEvents.ShowActionMenu.Subscribe(OnShowRequested);
-            GameEvents.HideActionMenu.Subscribe(OnHideRequested);
-        }
-
-        private void OnDisable()
+        private void OnDestroy()
         {
             GameEvents.ShowActionMenu.Unsubscribe(OnShowRequested);
             GameEvents.HideActionMenu.Unsubscribe(OnHideRequested);

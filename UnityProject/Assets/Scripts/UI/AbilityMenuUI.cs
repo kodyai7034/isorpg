@@ -36,16 +36,14 @@ namespace IsoRPG.UI
                 AddHoverFeedback(cancelButton);
             }
 
+            // Subscribe BEFORE Hide — must persist when inactive
+            GameEvents.ShowAbilityMenu.Subscribe(OnShowRequested);
+            GameEvents.HideAbilityMenu.Subscribe(OnHideRequested);
+
             Hide();
         }
 
-        private void OnEnable()
-        {
-            GameEvents.ShowAbilityMenu.Subscribe(OnShowRequested);
-            GameEvents.HideAbilityMenu.Subscribe(OnHideRequested);
-        }
-
-        private void OnDisable()
+        private void OnDestroy()
         {
             GameEvents.ShowAbilityMenu.Unsubscribe(OnShowRequested);
             GameEvents.HideAbilityMenu.Unsubscribe(OnHideRequested);
