@@ -60,6 +60,12 @@ namespace IsoRPG.Battle
         /// <summary>Deterministic RNG.</summary>
         public IGameRng Rng { get; set; }
 
+        /// <summary>
+        /// Default abilities available to all units. Placeholder until Job System (System 9)
+        /// provides per-unit ability lists. Set by BattleManager at battle start.
+        /// </summary>
+        public AbilityData[] DefaultAbilities { get; set; } = System.Array.Empty<AbilityData>();
+
         // --- Queries ---
 
         /// <summary>Get the UnitView for a unit, or null if not found.</summary>

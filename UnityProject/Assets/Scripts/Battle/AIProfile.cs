@@ -40,7 +40,7 @@ namespace IsoRPG.Battle
         [Header("Position")]
         /// <summary>Score bonus per elevation level of the candidate tile.</summary>
         public float HighGroundBonus = 10f;
-        /// <summary>Score adjustment per tile distance from nearest enemy. Positive = stay away, negative = close in.</summary>
+        /// <summary>Score adjustment per tile distance from nearest enemy. Positive = prefer far (defensive), negative = prefer close (aggressive).</summary>
         public float DistanceFromEnemyPenalty = 1f;
 
         /// <summary>Create a default Aggressive profile at runtime (for units without a ScriptableObject).</summary>

@@ -56,6 +56,18 @@ namespace IsoRPG.Battle
 
             // Pre-compute enemy and ally lists
             var enemies = ctx.AllUnits.Where(u => u.IsAlive && u.Team != unit.Team).ToList();
+
+            // Sort tiles by proximity to nearest enemy so the 500-combo cap
+            // evaluates combat-relevant positions first
+            if (enemies.Count > 0)
+            {
+                reachableTiles.Sort((a, b) =>
+                {
+                    int aDist = enemies.Min(e => IsoMath.ManhattanDistance(a, e.GridPosition));
+                    int bDist = enemies.Min(e => IsoMath.ManhattanDistance(b, e.GridPosition));
+                    return aDist.CompareTo(bDist);
+                });
+            }
             var allies = ctx.AllUnits.Where(u => u.IsAlive && u.Team == unit.Team && u != unit).ToList();
 
             int combosEvaluated = 0;
@@ -199,7 +211,9 @@ namespace IsoRPG.Battle
                     if (dist <= enemy.Stats.Move + 1) enemiesInRange++; // can they reach us?
                 }
 
-                score -= minDist * profile.DistanceFromEnemyPenalty;
+                // Positive penalty = prefer staying FAR (defensive)
+                // Negative penalty = prefer being CLOSE (aggressive)
+                score += minDist * profile.DistanceFromEnemyPenalty;
                 score -= enemiesInRange * profile.SelfPreservationWeight;
             }
 

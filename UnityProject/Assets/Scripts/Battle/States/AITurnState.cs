@@ -12,25 +12,32 @@ namespace IsoRPG.Battle.States
     /// </summary>
     public class AITurnState : IState<BattleContext>
     {
-        private enum Phase { Evaluating, Moving, Acting, Done }
+        private enum Phase { Moving, Acting, Done }
 
         private Phase _phase;
         private AIOption _chosen;
         private float _timer;
         private bool _animationComplete;
-        private AIController _aiController;
-        private AIProfile _profile;
+        private Coroutine _activeCoroutine;
+
+        // Cached across turns to avoid per-turn allocation
+        private static AIController _cachedController;
+        private static AIProfile _cachedProfile;
 
         private const float PhaseDelay = 0.4f;
 
         public void Enter(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
-            _aiController = new AIController();
-            _profile = AIProfile.CreateAggressive(); // default until per-unit profiles
+            _cachedController ??= new AIController();
+            if (_cachedProfile == null)
+            {
+                _cachedProfile = AIProfile.CreateAggressive();
+                _cachedProfile.hideFlags = HideFlags.HideAndDontSave;
+            }
 
-            // Get abilities for this unit (MVP: just Attack)
-            var abilities = Resources.FindObjectsOfTypeAll<AbilityData>();
-            if (abilities.Length == 0)
+            // Use context's default abilities (set by BattleManager at battle start)
+            var abilities = ctx.DefaultAbilities;
+            if (abilities == null || abilities.Length == 0)
             {
                 // No abilities — just wait
                 Debug.Log($"[AI] {ctx.ActiveUnit.Name} has no abilities — waiting");
@@ -41,7 +48,7 @@ namespace IsoRPG.Battle.States
                 return;
             }
 
-            _chosen = _aiController.EvaluateBestOption(ctx.ActiveUnit, ctx, _profile, abilities);
+            _chosen = _cachedController.EvaluateBestOption(ctx.ActiveUnit, ctx, _cachedProfile, abilities);
 
             Debug.Log($"[AI] {ctx.ActiveUnit.Name} chose: move to ({_chosen.MoveTo.x},{_chosen.MoveTo.y})" +
                       (_chosen.Ability != null ? $", use {_chosen.Ability.AbilityName} on {_chosen.Target?.Name}" : ", wait") +
@@ -110,7 +117,17 @@ namespace IsoRPG.Battle.States
             }
         }
 
-        public void Exit(BattleContext ctx) { }
+        public void Exit(BattleContext ctx)
+        {
+            // Cancel any running animation coroutine to prevent stale writes
+            if (_activeCoroutine != null)
+            {
+                var view = ctx.GetUnitView(ctx.ActiveUnit.Id);
+                if (view != null)
+                    view.StopCoroutine(_activeCoroutine);
+                _activeCoroutine = null;
+            }
+        }
 
         private void ExecuteMove(BattleContext ctx)
         {
@@ -134,7 +151,7 @@ namespace IsoRPG.Battle.States
             if (unitView != null)
             {
                 _animationComplete = false;
-                unitView.StartCoroutine(WaitForMoveAnimation(unitView, ctx));
+                _activeCoroutine = unitView.StartCoroutine(WaitForMoveAnimation(unitView, ctx));
             }
             else
             {
