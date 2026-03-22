@@ -1,7 +1,6 @@
 using UnityEngine;
-using IsoRPG.Core;
 
-namespace IsoRPG.Battle
+namespace IsoRPG.Core
 {
     /// <summary>
     /// Which equip slot an ability occupies.

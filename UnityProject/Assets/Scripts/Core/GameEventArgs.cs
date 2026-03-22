@@ -153,3 +153,34 @@ namespace IsoRPG.Core
         }
     }
 }
+
+namespace IsoRPG.Core
+{
+    /// <summary>Request to show the action menu with context flags.</summary>
+    public readonly struct ActionMenuRequestArgs
+    {
+        public readonly bool CanMove;
+        public readonly bool CanAct;
+        public readonly bool CanUndo;
+
+        public ActionMenuRequestArgs(bool canMove, bool canAct, bool canUndo)
+        {
+            CanMove = canMove;
+            CanAct = canAct;
+            CanUndo = canUndo;
+        }
+    }
+
+    /// <summary>Request to show the ability menu with available abilities.</summary>
+    public readonly struct AbilityMenuRequestArgs
+    {
+        public readonly AbilityData[] Abilities;
+        public readonly int CurrentMP;
+
+        public AbilityMenuRequestArgs(AbilityData[] abilities, int currentMP)
+        {
+            Abilities = abilities;
+            CurrentMP = currentMP;
+        }
+    }
+}

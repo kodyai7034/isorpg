@@ -1,6 +1,5 @@
 using UnityEngine;
 using IsoRPG.Core;
-using IsoRPG.Battle;
 
 namespace IsoRPG.Units
 {

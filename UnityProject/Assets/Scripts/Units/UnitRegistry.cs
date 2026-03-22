@@ -23,9 +23,17 @@ namespace IsoRPG.Units
         /// <summary>Total registered units (including dead).</summary>
         public int Count => _all.Count;
 
-        /// <summary>All currently living units.</summary>
-        public IReadOnlyList<UnitInstance> AllLiving =>
-            _all.Where(u => u.IsAlive).ToList().AsReadOnly();
+        /// <summary>All currently living units. Filters on access — avoid calling in tight loops.</summary>
+        public List<UnitInstance> GetAllLiving()
+        {
+            _livingCache.Clear();
+            foreach (var u in _all)
+            {
+                if (u.IsAlive) _livingCache.Add(u);
+            }
+            return _livingCache;
+        }
+        private readonly List<UnitInstance> _livingCache = new();
 
         /// <summary>
         /// Register a unit at battle start. Subscribes to position change events
@@ -84,10 +92,16 @@ namespace IsoRPG.Units
         /// </summary>
         /// <param name="team">Team index (0=player, 1=enemy, 2=neutral).</param>
         /// <returns>Read-only list of living units on that team.</returns>
-        public IReadOnlyList<UnitInstance> GetTeam(int team)
+        public List<UnitInstance> GetTeam(int team)
         {
-            return _all.Where(u => u.Team == team && u.IsAlive).ToList().AsReadOnly();
+            _teamCache.Clear();
+            foreach (var u in _all)
+            {
+                if (u.Team == team && u.IsAlive) _teamCache.Add(u);
+            }
+            return _teamCache;
         }
+        private readonly List<UnitInstance> _teamCache = new();
 
         /// <summary>
         /// Check if a position is occupied by a living unit.

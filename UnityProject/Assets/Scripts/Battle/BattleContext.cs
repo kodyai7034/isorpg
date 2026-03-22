@@ -60,6 +60,9 @@ namespace IsoRPG.Battle
         /// <summary>Deterministic RNG.</summary>
         public IGameRng Rng { get; set; }
 
+        /// <summary>Rewind system for CHARIOT-style multi-turn undo.</summary>
+        public RewindSystem RewindSystem { get; set; }
+
         /// <summary>
         /// Default abilities available to all units. Placeholder until Job System (System 9)
         /// provides per-unit ability lists. Set by BattleManager at battle start.

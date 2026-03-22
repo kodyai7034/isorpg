@@ -1,13 +1,14 @@
-using System;
 using UnityEngine;
 using UnityEngine.UI;
+using IsoRPG.Core;
 
 namespace IsoRPG.UI
 {
     /// <summary>
     /// Context-sensitive action menu during player turns.
-    /// Shows Move/Act/Wait/Undo buttons based on current turn state.
-    /// Battle states subscribe to the events instead of polling keyboard input.
+    /// Subscribes to GameEvents.ShowActionMenu / HideActionMenu.
+    /// Button clicks raise GameEvents.ActionMoveSelected etc.
+    /// No direct coupling to battle states.
     /// </summary>
     public class ActionMenuUI : MonoBehaviour
     {
@@ -17,39 +18,36 @@ namespace IsoRPG.UI
         [SerializeField] private Button waitButton;
         [SerializeField] private Button undoButton;
 
-        /// <summary>Fired when Move is clicked.</summary>
-        public event Action OnMoveSelected;
-        /// <summary>Fired when Act is clicked.</summary>
-        public event Action OnActSelected;
-        /// <summary>Fired when Wait is clicked.</summary>
-        public event Action OnWaitSelected;
-        /// <summary>Fired when Undo is clicked.</summary>
-        public event Action OnUndoSelected;
-
         private void Awake()
         {
-            if (moveButton != null) moveButton.onClick.AddListener(() => OnMoveSelected?.Invoke());
-            if (actButton != null) actButton.onClick.AddListener(() => OnActSelected?.Invoke());
-            if (waitButton != null) waitButton.onClick.AddListener(() => OnWaitSelected?.Invoke());
-            if (undoButton != null) undoButton.onClick.AddListener(() => OnUndoSelected?.Invoke());
+            if (moveButton != null) moveButton.onClick.AddListener(() => GameEvents.ActionMoveSelected.Raise());
+            if (actButton != null) actButton.onClick.AddListener(() => GameEvents.ActionActSelected.Raise());
+            if (waitButton != null) waitButton.onClick.AddListener(() => GameEvents.ActionWaitSelected.Raise());
+            if (undoButton != null) undoButton.onClick.AddListener(() => GameEvents.ActionUndoSelected.Raise());
             Hide();
         }
 
-        /// <summary>
-        /// Show the action menu with buttons enabled/disabled based on context.
-        /// </summary>
-        /// <param name="canMove">Whether the unit can still move.</param>
-        /// <param name="canAct">Whether the unit can still act.</param>
-        /// <param name="canUndo">Whether there are commands to undo.</param>
-        public void Show(bool canMove, bool canAct, bool canUndo)
+        private void OnEnable()
+        {
+            GameEvents.ShowActionMenu.Subscribe(OnShowRequested);
+            GameEvents.HideActionMenu.Subscribe(Hide);
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.ShowActionMenu.Unsubscribe(OnShowRequested);
+            GameEvents.HideActionMenu.Unsubscribe(Hide);
+        }
+
+        private void OnShowRequested(ActionMenuRequestArgs args)
         {
             gameObject.SetActive(true);
-            if (moveButton != null) moveButton.interactable = canMove;
-            if (actButton != null) actButton.interactable = canAct;
+            if (moveButton != null) moveButton.interactable = args.CanMove;
+            if (actButton != null) actButton.interactable = args.CanAct;
             if (undoButton != null)
             {
-                undoButton.interactable = canUndo;
-                undoButton.gameObject.SetActive(canUndo);
+                undoButton.interactable = args.CanUndo;
+                undoButton.gameObject.SetActive(args.CanUndo);
             }
         }
 

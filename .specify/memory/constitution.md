@@ -8,16 +8,20 @@ A Final Fantasy Tactics-inspired isometric tactics RPG built in Unity, featuring
 1. **Gameplay First**: Every system serves the tactical combat loop. No feature bloat.
 2. **Cross-Platform**: Unity targeting PC (Windows/Mac/Linux) first, console and mobile as stretch goals.
 3. **AI-Assisted Assets**: Use Gemini + PixelLab pipeline for character sprites, tiles, and animations. Minimize manual art dependency.
-4. **Solo-Developer Scoped**: Architecture decisions favor simplicity and iteration speed over enterprise patterns.
-5. **Spec-Driven**: Features are specified before implementation. Tests validate specs.
-6. **Rewind-Ready**: All game actions use the Command Pattern from day one. Undo/rewind (CHARIOT-style) is a first-class architectural concern, not a bolt-on.
+4. **Production-Ready Code**: Never take shortcuts. No "fastest" or "easiest" approach — always the production-ready, ship-it answer. Best practices in every file, every commit.
+5. **Modular & Extensible**: Every system is built to be extended without rewriting. Interfaces over concrete types. Composition over inheritance. New abilities, jobs, status effects, and AI behaviors plug in without touching existing code.
+6. **Spec-Driven**: Features are specified before implementation. Tests validate specs.
+7. **Rewind-Ready**: All game actions use the Command Pattern from day one. Undo/rewind (CHARIOT-style) is a first-class architectural concern, not a bolt-on.
 
 ## Architecture Mandates
 
-These patterns are non-negotiable across the entire codebase:
+These patterns are non-negotiable across the entire codebase. Every system must be built as if it's shipping tomorrow — no prototyping mindset, no "we'll fix it later."
+
+### Interfaces & Abstractions First
+Define behavior through interfaces, not concrete classes. New content (abilities, status effects, AI behaviors, terrain types) plugs in by implementing an interface — never by modifying existing code. Follow SOLID principles, especially Open/Closed: open for extension, closed for modification.
 
 ### Command Pattern for All Actions
-Every game action (Move, Attack, UseAbility, Wait, UseItem) is a `ICommand` object with `Execute()` and `Undo()`. This enables:
+Every game action (Move, Attack, UseAbility, Wait, UseItem) is an `ICommand` object with `Execute()` and `Undo()`. This enables:
 - Undo/rewind (Tactics Ogre CHARIOT, Fire Emblem Divine Pulse)
 - AI evaluation (execute hypothetically, score, undo)
 - Replay recording (serialize command log)
@@ -38,6 +42,14 @@ UI, camera, audio, and VFX subscribe to events — they never poll game state.
 
 ### Input Abstraction
 Player input, AI decisions, and network commands all produce the same `ICommand` objects. The battle system does not know or care where commands come from.
+
+### Defensive & Robust Code
+- Validate at system boundaries — never trust external input.
+- Guard against infinite loops, null references, and out-of-bounds access.
+- Use `TryGet` patterns over raw lookups. Return sentinel values, not `default`.
+- Fail loudly in editor (asserts, exceptions), fail gracefully in builds.
+- No magic numbers — constants and enums with clear names.
+- Every public API has XML doc comments describing contract and edge cases.
 
 ## Tech Stack
 
