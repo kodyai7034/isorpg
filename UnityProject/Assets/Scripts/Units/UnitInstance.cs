@@ -72,7 +72,16 @@ namespace IsoRPG.Units
         public int Level { get; private set; }
 
         /// <summary>Computed stats (base + job + equipment). Recalculated on job/equip change.</summary>
-        public ComputedStats Stats { get; set; }
+        public ComputedStats Stats { get; private set; }
+
+        /// <summary>
+        /// Update computed stats. Called when job, level, or equipment changes.
+        /// </summary>
+        /// <param name="stats">New computed stats.</param>
+        public void SetStats(ComputedStats stats)
+        {
+            Stats = stats;
+        }
 
         /// <summary>Brave stat (0-100). Affects physical reactions and certain weapons.</summary>
         public int Brave { get; private set; }

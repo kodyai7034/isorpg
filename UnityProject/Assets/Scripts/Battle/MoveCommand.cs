@@ -64,8 +64,10 @@ namespace IsoRPG.Battle
             // Apply move
             _unit.SetPosition(_destination);
 
-            // Update facing toward movement direction
-            if (_previousPosition != _destination)
+            // Update facing based on the last leg of the path (not overall direction)
+            if (_path.Count >= 2)
+                _unit.SetFacing(IsoMath.GetDirection(_path[_path.Count - 2], _path[_path.Count - 1]));
+            else if (_previousPosition != _destination)
                 _unit.SetFacing(IsoMath.GetDirection(_previousPosition, _destination));
 
             // Fire global event

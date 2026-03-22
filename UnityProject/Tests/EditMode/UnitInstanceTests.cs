@@ -10,7 +10,7 @@ namespace IsoRPG.Tests
         private UnitInstance CreateUnit(int hp = 100)
         {
             var unit = new UnitInstance("TestUnit", 0, 1, new Vector2Int(3, 4));
-            unit.Stats = new ComputedStats { MaxHP = hp, MaxMP = 50, Speed = 7, Move = 4, Jump = 3 };
+            unit.SetStats(new ComputedStats { MaxHP = hp, MaxMP = 50, Speed = 7, Move = 4, Jump = 3 });
             unit.SetHP(hp);
             return unit;
         }

@@ -14,10 +14,10 @@ namespace IsoRPG.Tests
             var slow = new UnitInstance("Slow", 1, 1, new Vector2Int(1, 0));
 
             // Override stats for deterministic testing
-            fast.Stats = new ComputedStats { Speed = 10, MaxHP = 100, Move = 4, Jump = 3 };
-            fast.CurrentHP = 100;
-            slow.Stats = new ComputedStats { Speed = 5, MaxHP = 100, Move = 4, Jump = 3 };
-            slow.CurrentHP = 100;
+            fast.SetStats(new ComputedStats { Speed = 10, MaxHP = 100, Move = 4, Jump = 3 });
+            fast.SetHP(100);
+            slow.SetStats(new ComputedStats { Speed = 5, MaxHP = 100, Move = 4, Jump = 3 });
+            slow.SetHP(100);
 
             return new List<UnitInstance> { fast, slow };
         }
@@ -97,7 +97,7 @@ namespace IsoRPG.Tests
         public void AdvanceTick_DeadUnits_Skipped()
         {
             var units = CreateTestUnits();
-            units[0].CurrentHP = 0; // Kill the fast unit
+            units[0].SetHP(0); // Kill the fast unit
             var active = CTSystem.AdvanceTick(units);
             Assert.AreEqual("Slow", active.Name);
         }

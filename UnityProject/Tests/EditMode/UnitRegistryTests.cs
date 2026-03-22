@@ -78,7 +78,7 @@ namespace IsoRPG.Tests
         {
             var registry = new UnitRegistry();
             var unit = new UnitInstance("Ramza", 0, 1, new Vector2Int(0, 0));
-            unit.Stats = new ComputedStats { MaxHP = 10, Speed = 5, Move = 4, Jump = 3 };
+            unit.SetStats(new ComputedStats { MaxHP = 10, Speed = 5, Move = 4, Jump = 3 });
             unit.SetHP(10);
             registry.Register(unit);
 
