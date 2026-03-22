@@ -332,7 +332,8 @@ public static class QuickSetup
         if (abilityNormal != null)
         {
             img.sprite = abilityNormal;
-            img.type = UnityEngine.UI.Image.Type.Sliced;
+            img.type = UnityEngine.UI.Image.Type.Simple;
+            img.preserveAspect = false;
             img.color = Color.white;
         }
         else
@@ -510,7 +511,8 @@ public static class QuickSetup
         {
             // Use sprite art with SpriteSwap
             img.sprite = normalSprite;
-            img.type = UnityEngine.UI.Image.Type.Sliced;
+            img.type = UnityEngine.UI.Image.Type.Simple;
+            img.preserveAspect = false;
             img.color = Color.white;
 
             btn.transition = UnityEngine.UI.Selectable.Transition.SpriteSwap;
@@ -562,14 +564,15 @@ public static class QuickSetup
         return sprite;
     }
 
-    /// <summary>Set an Image component to use a panel sprite with 9-slice, or fallback color.</summary>
+    /// <summary>Set an Image component to use a panel sprite, or fallback color.</summary>
     static void SetPanelSprite(UnityEngine.UI.Image img, string spritePath, Color fallbackColor)
     {
         var sprite = LoadUISprite(spritePath);
         if (sprite != null)
         {
             img.sprite = sprite;
-            img.type = UnityEngine.UI.Image.Type.Sliced;
+            img.type = UnityEngine.UI.Image.Type.Simple;
+            img.preserveAspect = false;
             img.color = Color.white;
         }
         else
