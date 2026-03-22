@@ -32,9 +32,7 @@ namespace IsoRPG.Units
 
     public class UnitInstance
     {
-        private static int _nextId;
-
-        public int Id { get; }
+        public EntityId Id { get; }
         public string Name { get; set; }
         public int Team { get; set; }
         public int Level { get; set; }
@@ -60,7 +58,7 @@ namespace IsoRPG.Units
 
         public UnitInstance(string name, int team, int level, Vector2Int position)
         {
-            Id = _nextId++;
+            Id = EntityId.New();
             Name = name;
             Team = team;
             Level = level;

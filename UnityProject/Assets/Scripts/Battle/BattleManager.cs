@@ -81,7 +81,7 @@ namespace IsoRPG.Battle
     /// </summary>
     public class CTAdvanceState : IState<BattleContext>
     {
-        public void Enter(BattleContext ctx)
+        public void Enter(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
             var activeUnit = CTSystem.AdvanceTick(ctx.Units);
             ctx.ActiveUnit = activeUnit;
@@ -89,16 +89,16 @@ namespace IsoRPG.Battle
             ctx.ActiveUnitActed = false;
 
             Debug.Log($"[CT] {activeUnit.Name}'s turn! (CT={activeUnit.CT}, Speed={activeUnit.Stats.Speed})");
+
+            // TODO: Transition to SelectActionState (player) or AITurnState (enemy)
+            // For now, auto-end turn and loop
+            CTSystem.ResolveTurn(activeUnit, false, false);
+            machine.ChangeState(new CTAdvanceState());
         }
 
-        public void Execute(BattleContext ctx)
+        public void Execute(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
-            // Immediately transition — in the future this will go to
-            // SelectActionState (player) or AITurnState (enemy)
-            Debug.Log($"[Turn] {ctx.ActiveUnit.Name} (Team {ctx.ActiveUnit.Team}) — waiting for input...");
-
-            // For now, auto-end turn
-            CTSystem.ResolveTurn(ctx.ActiveUnit, false, false);
+            // All logic handled in Enter for now
         }
 
         public void Exit(BattleContext ctx) { }
