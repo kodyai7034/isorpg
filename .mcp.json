@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "pixellab": {
+      "type": "http",
+      "url": "https://api.pixellab.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer e07f93b7-2112-4078-b53f-727ce521c6fc"
+      }
+    },
+    "speckit": {
+      "command": "python3",
+      "args": ["-m", "speckit_mcp.server"],
+      "env": {
+        "PYTHONPATH": "/home/kskif/.npm/_npx/1465c3f21d726963/node_modules/speckit-mcp-x/python"
+      }
+    }
+  }
+}

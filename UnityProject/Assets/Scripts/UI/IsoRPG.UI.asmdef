@@ -1,0 +1,14 @@
+{
+    "name": "IsoRPG.UI",
+    "rootNamespace": "IsoRPG.UI",
+    "references": ["IsoRPG.Core", "IsoRPG.Battle", "IsoRPG.Units"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,31 @@
+{
+  "name": "fft-knight-idle",
+  "description": "JRPG knight character in Final Fantasy Tactics style - idle breathing animation",
+  "type": "character",
+  "animation": "idle breathing",
+  "frame_size": {"width": 64, "height": 64},
+  "keyframes": ["keyframes/start.png", "keyframes/end.png"],
+  "frames": [
+    "frames/frame_001.png",
+    "frames/frame_002.png",
+    "frames/frame_003.png",
+    "frames/frame_004.png",
+    "frames/frame_005.png",
+    "frames/frame_006.png",
+    "frames/frame_007.png",
+    "frames/frame_008.png",
+    "frames/frame_009.png",
+    "frames/frame_010.png",
+    "frames/frame_011.png",
+    "frames/frame_012.png",
+    "frames/frame_013.png",
+    "frames/frame_014.png"
+  ],
+  "frame_count": 14,
+  "created": "2026-03-22T00:44:00Z",
+  "pipeline": {
+    "keyframe_model": "gemini-2.5-flash-image",
+    "interpolation": "pixellab-v2",
+    "interpolation_seed": 1314010873
+  }
+}
