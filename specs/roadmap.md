@@ -166,23 +166,33 @@ All battle HUD elements, subscribing to game events.
 ## System 9: Job System & Progression
 **Branch**: `system/job-system`
 **Spec**: `specs/09-job-system/`
+**Design Doc**: `specs/09-job-system/class-system-design.md`
 
-FFT-style job/class system with ability learning.
+FFT-inspired 5-slot system with modern refinements. See class-system-design.md for full details.
 
-- `JobData` ScriptableObject — stat modifiers, equipment slots, abilities, JP costs
-- 6 jobs: Squire, Knight, Black Mage, White Mage, Archer, Thief
-- 4 abilities per job (24 total)
-- JP earning on ability use
-- Ability learning (spend JP)
-- Job switching with unlock requirements
-- Ability equip slots: primary, secondary, reaction, support, movement
-- Stat growth on level-up (varies by current job)
-- `ComputedStats` recalculation on job/equip change
-- Equipment system — weapons, armor, accessories
-- Party management scene
-- EditMode tests for JP, unlocks, stat computation
+**Key design decisions** (from research across FFT, Tactics Ogre, Fell Seal, Fire Emblem, etc.):
+- Character-intrinsic stat growth (no Ninja speed exploit) — classes apply temporary multipliers only
+- FFT's 5-slot equip system (Primary, Secondary, Reaction, Support, Movement)
+- Branching unlock tree with multi-class prerequisites
+- JP spillover (25% to allies in matching jobs)
+- Resolve/Attunement replacing Brave/Faith (simpler, no desertion)
+- Advanced classes are specialists, not upgrades
 
-**Exit Criteria**: Characters can change jobs, learn abilities, equip cross-class skills.
+**MVP (8 jobs)**: Squire, Knight, Archer, Black Mage, White Mage, Thief, Monk, Red Mage
+- 7 abilities per job (4 action + 1 reaction + 1 support + 1 movement) = 56 abilities total
+- `JobData` ScriptableObject — stat multipliers, equipment types, ability list, JP costs
+- `AbilityData` ScriptableObject — range, AoE, damage, cost, slot type
+- `JobSystem` class — unlock checks, JP earning/spending, ability learning
+- `ComputedStats` recalculation on job change (base * job multiplier)
+- Equipment system — weapons, armor, accessories with job restrictions
+- Equipment override via Support abilities (Equip Heavy Armor, Equip Swords)
+- Party management scene — job tree, ability equip, equipment
+- EditMode tests for JP, unlocks, stat computation, equipment validation
+
+**V1 (+6 jobs = 14)**: Dragoon, Time Mage, Geomancer, Samurai, Ninja, Sage
+**V2 (+6 jobs = 20)**: Dark Knight, Dancer, Bard, Summoner, Orator, Mime
+
+**Exit Criteria**: Characters can change jobs, learn abilities, equip cross-class skills, preview stat changes.
 
 ---
 
