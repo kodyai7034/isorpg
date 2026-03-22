@@ -128,13 +128,13 @@ namespace IsoRPG.Units
         public JobId? SecondaryAbilitySet { get; set; }
 
         /// <summary>Equipped reaction ability. Null = none.</summary>
-        public Battle.AbilityData EquippedReaction { get; set; }
+        public AbilityData EquippedReaction { get; set; }
 
         /// <summary>Equipped support ability. Null = none.</summary>
-        public Battle.AbilityData EquippedSupport { get; set; }
+        public AbilityData EquippedSupport { get; set; }
 
         /// <summary>Equipped movement ability. Null = none.</summary>
-        public Battle.AbilityData EquippedMovement { get; set; }
+        public AbilityData EquippedMovement { get; set; }
 
         // --- Equipment ---
 

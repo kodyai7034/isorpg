@@ -41,6 +41,18 @@ namespace IsoRPG.Battle.States
             _displayTimer -= Time.deltaTime;
             if (_displayTimer <= 0)
             {
+                // Check victory/defeat immediately after a kill
+                if (ctx.IsTeamDefeated(1))
+                {
+                    machine.ChangeState(new VictoryState());
+                    return;
+                }
+                if (ctx.IsTeamDefeated(0))
+                {
+                    machine.ChangeState(new DefeatState());
+                    return;
+                }
+
                 machine.ChangeState(new SelectActionState());
             }
         }

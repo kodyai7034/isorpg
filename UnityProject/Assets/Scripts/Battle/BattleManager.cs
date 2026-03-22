@@ -48,6 +48,7 @@ namespace IsoRPG.Battle
                 CommandHistory = new CommandHistory(),
                 MovementController = new MovementController(),
                 Rng = new GameRng(rngSeed),
+                RewindSystem = new RewindSystem(),
                 TurnNumber = 0
             };
 

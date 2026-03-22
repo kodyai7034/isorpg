@@ -52,6 +52,40 @@ namespace IsoRPG.Core
         /// <summary>Raised when a status effect is applied.</summary>
         public static readonly GameEvent<StatusAppliedArgs> StatusApplied = new();
 
+        // --- UI Requests (raised by battle states, consumed by UI) ---
+
+        /// <summary>Raised when the action menu should be shown. Args: canMove, canAct, canUndo.</summary>
+        public static readonly GameEvent<ActionMenuRequestArgs> ShowActionMenu = new();
+
+        /// <summary>Raised when the action menu should be hidden.</summary>
+        public static readonly GameEvent HideActionMenu = new();
+
+        /// <summary>Raised when the ability menu should be shown.</summary>
+        public static readonly GameEvent<AbilityMenuRequestArgs> ShowAbilityMenu = new();
+
+        /// <summary>Raised when the ability menu should be hidden.</summary>
+        public static readonly GameEvent HideAbilityMenu = new();
+
+        // --- UI Responses (raised by UI, consumed by battle states) ---
+
+        /// <summary>Raised when player clicks Move in action menu.</summary>
+        public static readonly GameEvent ActionMoveSelected = new();
+
+        /// <summary>Raised when player clicks Act in action menu.</summary>
+        public static readonly GameEvent ActionActSelected = new();
+
+        /// <summary>Raised when player clicks Wait in action menu.</summary>
+        public static readonly GameEvent ActionWaitSelected = new();
+
+        /// <summary>Raised when player clicks Undo in action menu.</summary>
+        public static readonly GameEvent ActionUndoSelected = new();
+
+        /// <summary>Raised when player selects an ability from the ability menu.</summary>
+        public static readonly GameEvent<AbilityData> AbilitySelected = new();
+
+        /// <summary>Raised when player cancels ability selection.</summary>
+        public static readonly GameEvent AbilitySelectionCancelled = new();
+
         // --- Commands (for UI history / rewind display) ---
 
         /// <summary>Raised after any command is executed.</summary>
@@ -78,6 +112,16 @@ namespace IsoRPG.Core
             StatusApplied.Clear();
             CommandExecuted.Clear();
             CommandUndone.Clear();
+            ShowActionMenu.Clear();
+            HideActionMenu.Clear();
+            ShowAbilityMenu.Clear();
+            HideAbilityMenu.Clear();
+            ActionMoveSelected.Clear();
+            ActionActSelected.Clear();
+            ActionWaitSelected.Clear();
+            ActionUndoSelected.Clear();
+            AbilitySelected.Clear();
+            AbilitySelectionCancelled.Clear();
         }
     }
 }

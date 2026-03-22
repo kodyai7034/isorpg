@@ -29,7 +29,7 @@ namespace IsoRPG.Battle
         // Captured pre-state for undo
         private int _targetHPBefore;
         private int _casterMPBefore;
-        private List<StatusSnapshot> _targetStatusBefore;
+        private List<CapturedStatus> _targetStatusBefore;
         private EntityId _appliedStatusId;
 
         // Result (for display)
@@ -198,19 +198,19 @@ namespace IsoRPG.Battle
             _rng?.SetSeed(_rngSeedBefore);
         }
 
-        private struct StatusSnapshot
+        private struct CapturedStatus
         {
             public EntityId Id;
             public StatusType Type;
             public int Duration;
         }
 
-        private static List<StatusSnapshot> SnapshotStatuses(UnitInstance unit)
+        private static List<CapturedStatus> SnapshotStatuses(UnitInstance unit)
         {
-            var snapshot = new List<StatusSnapshot>();
+            var snapshot = new List<CapturedStatus>();
             foreach (var s in unit.StatusEffects)
             {
-                snapshot.Add(new StatusSnapshot
+                snapshot.Add(new CapturedStatus
                 {
                     Id = s.Id,
                     Type = s.Type,

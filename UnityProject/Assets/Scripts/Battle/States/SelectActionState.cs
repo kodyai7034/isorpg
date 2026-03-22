@@ -1,12 +1,12 @@
 using UnityEngine;
 using IsoRPG.Core;
-using IsoRPG.UI;
 
 namespace IsoRPG.Battle.States
 {
     /// <summary>
     /// Player chooses an action: Move, Act, Wait, or Undo.
-    /// Supports both UI button clicks (via ActionMenuUI events) and keyboard shortcuts.
+    /// Communicates with UI via GameEvents (no direct UI references).
+    /// Also supports keyboard shortcuts as fallback.
     /// </summary>
     public class SelectActionState : IState<BattleContext>
     {
@@ -20,24 +20,17 @@ namespace IsoRPG.Battle.States
             _machine = machine;
             _actionTaken = false;
 
-            // Show UI menu if available
-            var ui = UIManager.Instance;
-            if (ui != null && ui.ActionMenu != null)
-            {
-                ui.ActionMenu.Show(
-                    canMove: !ctx.ActiveUnitMoved,
-                    canAct: !ctx.ActiveUnitActed,
-                    canUndo: ctx.TurnCommandCount > 0);
+            // Request UI to show action menu via event
+            GameEvents.ShowActionMenu.Raise(new ActionMenuRequestArgs(
+                canMove: !ctx.ActiveUnitMoved,
+                canAct: !ctx.ActiveUnitActed,
+                canUndo: ctx.TurnCommandCount > 0));
 
-                ui.ActionMenu.OnMoveSelected += OnMoveSelected;
-                ui.ActionMenu.OnActSelected += OnActSelected;
-                ui.ActionMenu.OnWaitSelected += OnWaitSelected;
-                ui.ActionMenu.OnUndoSelected += OnUndoSelected;
-            }
-
-            // Show unit info
-            if (ui != null && ui.UnitInfoPanel != null)
-                ui.UnitInfoPanel.ShowUnit(ctx.ActiveUnit);
+            // Subscribe to UI response events
+            GameEvents.ActionMoveSelected.Subscribe(OnMoveSelected);
+            GameEvents.ActionActSelected.Subscribe(OnActSelected);
+            GameEvents.ActionWaitSelected.Subscribe(OnWaitSelected);
+            GameEvents.ActionUndoSelected.Subscribe(OnUndoSelected);
 
             Debug.Log($"[Select] {ctx.ActiveUnit.Name}: " +
                 (!ctx.ActiveUnitMoved ? "[M]ove " : "") +
@@ -50,7 +43,7 @@ namespace IsoRPG.Battle.States
         {
             if (_actionTaken) return;
 
-            // Keyboard shortcuts (retained alongside UI buttons)
+            // Keyboard shortcuts (retained alongside UI)
             if (!ctx.ActiveUnitMoved && Input.GetKeyDown(KeyCode.M))
                 OnMoveSelected();
             else if (!ctx.ActiveUnitActed && Input.GetKeyDown(KeyCode.A))
@@ -63,16 +56,14 @@ namespace IsoRPG.Battle.States
 
         public void Exit(BattleContext ctx)
         {
-            // Unsubscribe from UI
-            var ui = UIManager.Instance;
-            if (ui != null && ui.ActionMenu != null)
-            {
-                ui.ActionMenu.OnMoveSelected -= OnMoveSelected;
-                ui.ActionMenu.OnActSelected -= OnActSelected;
-                ui.ActionMenu.OnWaitSelected -= OnWaitSelected;
-                ui.ActionMenu.OnUndoSelected -= OnUndoSelected;
-                ui.ActionMenu.Hide();
-            }
+            // Unsubscribe from UI events
+            GameEvents.ActionMoveSelected.Unsubscribe(OnMoveSelected);
+            GameEvents.ActionActSelected.Unsubscribe(OnActSelected);
+            GameEvents.ActionWaitSelected.Unsubscribe(OnWaitSelected);
+            GameEvents.ActionUndoSelected.Unsubscribe(OnUndoSelected);
+
+            // Request UI to hide
+            GameEvents.HideActionMenu.Raise();
         }
 
         private void OnMoveSelected()

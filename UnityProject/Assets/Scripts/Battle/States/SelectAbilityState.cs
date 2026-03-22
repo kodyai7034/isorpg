@@ -1,6 +1,5 @@
 using UnityEngine;
 using IsoRPG.Core;
-using IsoRPG.UI;
 
 namespace IsoRPG.Battle.States
 {

@@ -8,8 +8,8 @@ namespace IsoRPG.Battle
     /// Pure static damage/healing/hit-chance formulas. No side effects, no state.
     /// All formulas are deterministic given the same inputs.
     ///
-    /// Physical: scales with PA and Resolve (Brave equivalent).
-    /// Magical: scales with MA and Attunement (Faith equivalent) for both caster and target.
+    /// Physical: scales with PA and Brave (Brave equivalent).
+    /// Magical: scales with MA and Faith (Faith equivalent) for both caster and target.
     /// Pure: ignores all defenses.
     /// </summary>
     public static class DamageCalculator
@@ -19,11 +19,11 @@ namespace IsoRPG.Battle
         /// </summary>
         /// <param name="ability">The ability being used.</param>
         /// <param name="attacker">Attacker's computed stats.</param>
-        /// <param name="resolve">Attacker's Resolve (0-100). Affects physical damage.</param>
-        /// <param name="attunement">Attacker's Attunement (0-100). Affects magical damage.</param>
+        /// <param name="brave">Attacker's Brave (0-100). Affects physical damage.</param>
+        /// <param name="faith">Attacker's Faith (0-100). Affects magical damage.</param>
         /// <returns>Raw damage value (before defense).</returns>
         public static int CalculateRawDamage(AbilityData ability, ComputedStats attacker,
-            int resolve, int attunement)
+            int brave, int faith)
         {
             float baseDamage;
 
@@ -31,12 +31,12 @@ namespace IsoRPG.Battle
             {
                 case DamageType.Physical:
                     baseDamage = attacker.PhysicalAttack * ability.Power / 10f;
-                    baseDamage *= resolve / 100f;
+                    baseDamage *= brave / 100f;
                     break;
 
                 case DamageType.Magical:
                     baseDamage = attacker.MagicAttack * ability.Power / 10f;
-                    baseDamage *= attunement / 100f;
+                    baseDamage *= faith / 100f;
                     break;
 
                 case DamageType.Pure:
@@ -57,10 +57,10 @@ namespace IsoRPG.Battle
         /// <param name="rawDamage">Damage before defense.</param>
         /// <param name="type">Damage type (determines which defense stat applies).</param>
         /// <param name="defender">Defender's computed stats.</param>
-        /// <param name="defenderAttunement">Defender's Attunement. Magical damage is further scaled by this.</param>
+        /// <param name="defenderFaith">Defender's Faith. Magical damage is further scaled by this.</param>
         /// <returns>Damage after defense (minimum 1).</returns>
         public static int ApplyDefense(int rawDamage, DamageType type, ComputedStats defender,
-            int defenderAttunement = 70)
+            int defenderFaith = 70)
         {
             float reduced;
 
@@ -71,9 +71,9 @@ namespace IsoRPG.Battle
                     break;
 
                 case DamageType.Magical:
-                    // Magical damage further scaled by target's Attunement
-                    // High Attunement = take MORE magic damage (same as FFT's Faith)
-                    reduced = rawDamage * (defenderAttunement / 100f) - defender.MagicDefense;
+                    // Magical damage further scaled by target's Faith
+                    // High Faith = take MORE magic damage (same as FFT's Faith)
+                    reduced = rawDamage * (defenderFaith / 100f) - defender.MagicDefense;
                     break;
 
                 case DamageType.Pure:
@@ -94,17 +94,17 @@ namespace IsoRPG.Battle
         /// <param name="ability">The ability being used.</param>
         /// <param name="attacker">Attacker's computed stats.</param>
         /// <param name="defender">Defender's computed stats.</param>
-        /// <param name="attackerResolve">Attacker's Resolve (0-100).</param>
-        /// <param name="attackerAttunement">Attacker's Attunement (0-100).</param>
-        /// <param name="defenderAttunement">Defender's Attunement (0-100).</param>
+        /// <param name="attackerBrave">Attacker's Brave (0-100).</param>
+        /// <param name="attackerFaith">Attacker's Faith (0-100).</param>
+        /// <param name="defenderFaith">Defender's Faith (0-100).</param>
         /// <param name="heightAdvantage">Elevation difference (positive = attacking downhill).</param>
         /// <returns>Final damage (minimum 1).</returns>
         public static int CalculateFinalDamage(AbilityData ability, ComputedStats attacker,
-            ComputedStats defender, int attackerResolve, int attackerAttunement,
-            int defenderAttunement, int heightAdvantage = 0)
+            ComputedStats defender, int attackerBrave, int attackerFaith,
+            int defenderFaith, int heightAdvantage = 0)
         {
-            int raw = CalculateRawDamage(ability, attacker, attackerResolve, attackerAttunement);
-            int afterDefense = ApplyDefense(raw, ability.DamageType, defender, defenderAttunement);
+            int raw = CalculateRawDamage(ability, attacker, attackerBrave, attackerFaith);
+            int afterDefense = ApplyDefense(raw, ability.DamageType, defender, defenderFaith);
             int heightBonus = heightAdvantage * GameConstants.HeightAdvantagePerLevel;
 
             return Mathf.Max(1, afterDefense + heightBonus);
@@ -133,13 +133,13 @@ namespace IsoRPG.Battle
         /// </summary>
         /// <param name="ability">The healing ability.</param>
         /// <param name="caster">Caster's computed stats.</param>
-        /// <param name="casterAttunement">Caster's Attunement (0-100).</param>
+        /// <param name="casterFaith">Caster's Faith (0-100).</param>
         /// <returns>Healing amount (minimum 1).</returns>
         public static int CalculateHealing(AbilityData ability, ComputedStats caster,
-            int casterAttunement)
+            int casterFaith)
         {
             float heal = caster.MagicAttack * ability.Power / 10f;
-            heal *= casterAttunement / 100f;
+            heal *= casterFaith / 100f;
             return Mathf.Max(1, Mathf.FloorToInt(heal));
         }
     }
