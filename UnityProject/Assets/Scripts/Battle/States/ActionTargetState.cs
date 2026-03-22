@@ -81,7 +81,6 @@ namespace IsoRPG.Battle.States
                 }
 
                 _actionTaken = true;
-                SFXManager.Instance?.PlayConfirm();
                 machine.ChangeState(new PerformActionState(_ability, target));
             }
         }
@@ -97,7 +96,6 @@ namespace IsoRPG.Battle.States
         {
             if (_actionTaken) return;
             _actionTaken = true;
-            SFXManager.Instance?.PlayCancel();
             _machine.ChangeState(new CombatMenuState());
         }
     }

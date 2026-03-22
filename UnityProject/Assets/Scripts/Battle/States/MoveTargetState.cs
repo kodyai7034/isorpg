@@ -65,7 +65,7 @@ namespace IsoRPG.Battle.States
                     if (cmd != null)
                     {
                         _actionTaken = true;
-                        SFXManager.Instance?.PlayConfirm();
+                        // SFX handled by UI layer via events
                         machine.ChangeState(new PerformMoveState(cmd));
                     }
                 }
@@ -83,7 +83,6 @@ namespace IsoRPG.Battle.States
         {
             if (_actionTaken) return;
             _actionTaken = true;
-            SFXManager.Instance?.PlayCancel();
             _machine.ChangeState(new SelectActionState());
         }
     }
