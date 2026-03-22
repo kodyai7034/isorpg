@@ -183,4 +183,17 @@ namespace IsoRPG.Core
             CurrentMP = currentMP;
         }
     }
+
+    /// <summary>Request to show the combat sub-menu (Attack / Skills / Skip).</summary>
+    public readonly struct CombatMenuRequestArgs
+    {
+        public readonly bool HasSkills;
+        public readonly int CurrentMP;
+
+        public CombatMenuRequestArgs(bool hasSkills, int currentMP)
+        {
+            HasSkills = hasSkills;
+            CurrentMP = currentMP;
+        }
+    }
 }

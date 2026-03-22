@@ -60,7 +60,7 @@ namespace IsoRPG.Battle.States
         {
             if (_actionTaken || _ctx.ActiveUnitActed) return;
             _actionTaken = true;
-            _machine.ChangeState(new SelectAbilityState());
+            _machine.ChangeState(new CombatMenuState());
         }
 
         private void OnWaitSelected()

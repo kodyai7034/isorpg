@@ -147,13 +147,16 @@ public static class QuickSetup
         // --- Action Menu ---
         var actionMenu = CreateActionMenuUI(canvasObj.transform);
 
-        // --- Ability Menu ---
+        // --- Combat Menu (Attack / Skills / Skip) ---
+        CreateCombatMenuUI(canvasObj.transform);
+
+        // --- Skills Menu ---
         var abilityMenu = CreateAbilityMenuUI(canvasObj.transform);
 
         // --- Turn Banner ---
         CreateTurnBanner(canvasObj.transform);
 
-        // Wire UIManager references via SerializedObject
+        // Wire UIManager references
         var uiMgr = canvasObj.GetComponent(FindType("IsoRPG.UI.UIManager"));
         if (uiMgr != null)
         {
@@ -163,7 +166,7 @@ public static class QuickSetup
             so.ApplyModifiedProperties();
         }
 
-        Debug.Log("[QuickSetup] UI created: ActionMenu, AbilityMenu, TurnBanner, EventSystem");
+        Debug.Log("[QuickSetup] UI created: ActionMenu, CombatMenu, SkillsMenu, TurnBanner");
     }
 
     static GameObject CreateActionMenuUI(Transform parent)
@@ -218,6 +221,48 @@ public static class QuickSetup
             es.firstSelectedGameObject = moveBtn;
 
         return panel;
+    }
+
+    static void CreateCombatMenuUI(Transform parent)
+    {
+        var panel = new GameObject("CombatMenu");
+        panel.transform.SetParent(parent, false);
+        var panelRect = panel.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(1, 0);
+        panelRect.anchorMax = new Vector2(1, 0);
+        panelRect.pivot = new Vector2(1, 0);
+        panelRect.anchoredPosition = new Vector2(-20, 20);
+        panelRect.sizeDelta = new Vector2(180, 250);
+
+        var panelImg = panel.AddComponent<UnityEngine.UI.Image>();
+        panelImg.color = new Color(0.1f, 0.06f, 0.06f, 0.92f);
+
+        var layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+        layout.padding = new RectOffset(10, 10, 10, 10);
+        layout.spacing = 8;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        var attackBtn = MakeMenuButton("Attack", panel.transform, new Color(0.8f, 0.3f, 0.2f));
+        var skillsBtn = MakeMenuButton("Skills", panel.transform, new Color(0.3f, 0.3f, 0.75f));
+        var skipBtn = MakeMenuButton("Skip", panel.transform, new Color(0.45f, 0.45f, 0.45f));
+        var cancelBtn = MakeMenuButton("Cancel", panel.transform, new Color(0.5f, 0.35f, 0.2f));
+
+        SetButtonNavigation(attackBtn, null, skillsBtn);
+        SetButtonNavigation(skillsBtn, attackBtn, skipBtn);
+        SetButtonNavigation(skipBtn, skillsBtn, cancelBtn);
+        SetButtonNavigation(cancelBtn, skipBtn, null);
+
+        var combatComp = AddComponentByName(panel, "IsoRPG.UI.CombatMenuUI");
+        if (combatComp != null)
+        {
+            var so = new SerializedObject(combatComp);
+            SetRef(so, "attackButton", attackBtn.GetComponent<UnityEngine.UI.Button>());
+            SetRef(so, "skillsButton", skillsBtn.GetComponent<UnityEngine.UI.Button>());
+            SetRef(so, "skipButton", skipBtn.GetComponent<UnityEngine.UI.Button>());
+            SetRef(so, "cancelButton", cancelBtn.GetComponent<UnityEngine.UI.Button>());
+            so.ApplyModifiedProperties();
+        }
     }
 
     static GameObject CreateAbilityMenuUI(Transform parent)
