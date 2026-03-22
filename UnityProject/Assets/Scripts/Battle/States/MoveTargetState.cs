@@ -6,7 +6,7 @@ namespace IsoRPG.Battle.States
     /// <summary>
     /// Player selects a destination tile for movement.
     /// Shows movement range overlay and path preview on hover.
-    /// Left-click confirms, right-click/Escape cancels.
+    /// Left-click confirms, right-click cancels. No keyboard input.
     /// </summary>
     public class MoveTargetState : IState<BattleContext>
     {
@@ -17,7 +17,8 @@ namespace IsoRPG.Battle.States
             _result = ctx.MovementController.ShowMovementRange(
                 ctx.ActiveUnit, ctx.Map, ctx.AllUnits, ctx.Grid);
 
-            Debug.Log($"[Move] {ctx.ActiveUnit.Name}: select destination (click tile, Esc to cancel)");
+            GameEvents.HideActionMenu.Raise();
+            Debug.Log($"[Move] {ctx.ActiveUnit.Name}: click a blue tile to move (right-click to cancel)");
         }
 
         public void Execute(BattleContext ctx, IStateMachine<BattleContext> machine)
@@ -30,7 +31,7 @@ namespace IsoRPG.Battle.States
             }
 
             // Cancel
-            if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape))
+            if (Input.GetMouseButtonDown(1))
             {
                 ctx.MovementController.ClearOverlays(ctx.Grid);
                 machine.ChangeState(new SelectActionState());

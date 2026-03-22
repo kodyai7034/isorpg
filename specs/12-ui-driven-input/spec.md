@@ -2,7 +2,7 @@
 
 ## Overview
 
-Complete rework of player input: remove all keyboard-based gameplay actions, replace with polished on-screen menus that feel buttery smooth. Every interaction has audio + visual feedback. Menu art generated via Gemini.
+Complete rework of player input: mouse-primary with keyboard navigation support. All gameplay flows through on-screen menus. Arrow keys navigate menus, Enter confirms, Escape cancels. WASD pans camera, Q/E rotates. Every interaction has audio + visual feedback. Menu art generated via Gemini.
 
 ---
 
