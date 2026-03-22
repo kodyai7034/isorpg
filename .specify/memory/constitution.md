@@ -43,14 +43,31 @@ UI, camera, audio, and VFX subscribe to events — they never poll game state.
 ### Input Abstraction
 Player input, AI decisions, and network commands all produce the same `ICommand` objects. The battle system does not know or care where commands come from.
 
-### UI-Driven Player Input (No Keyboard Bindings)
-All player actions are driven through **on-screen UI menus and mouse clicks** — never raw keyboard shortcuts. The player interacts exclusively through:
-- **Clickable action menu** (Move, Act, Wait, Undo buttons)
-- **Clickable ability menu** (list of abilities with MP costs)
-- **Mouse clicks on tiles** (select movement destination, select attack target)
-- **Mouse hover** for tooltips, path preview, and unit info
+### Input Model (Mouse-Primary + Keyboard Navigation)
 
-No gameplay actions are bound to keyboard keys. Keyboard shortcuts are only for non-gameplay functions (camera pan with WASD, zoom with scroll). The game must be fully playable with mouse alone. Battle states must NEVER use `Input.GetKeyDown` for gameplay actions — all gameplay input flows through UI button events via GameEvents.
+The game is **mouse-primary** — all gameplay actions are accessible via on-screen UI and mouse clicks. Keyboard provides **navigation and camera control** as a complement, not a replacement.
+
+**Mouse (primary input):**
+- **Click menu buttons** — Move, Act, Wait, Undo, ability selection, cancel
+- **Click tiles** — select movement destination, select attack target
+- **Right-click** — cancel / go back
+- **Hover** — tooltips, path preview, unit info
+- **Scroll wheel** — camera zoom
+
+**Keyboard (navigation + camera):**
+- **Arrow keys** — navigate between menu buttons (highlight moves between options)
+- **Enter/Space** — confirm highlighted menu option
+- **Escape** — cancel / go back (same as right-click)
+- **WASD** — pan camera
+- **Q / E** — rotate map 90° CW / CCW
+- **Scroll wheel** — camera zoom
+
+**Design rules:**
+- The game must be fully playable with mouse alone
+- The game must be fully navigable with keyboard alone (arrow keys + Enter + Escape)
+- Battle states must NOT use `Input.GetKeyDown` for direct action triggers — all gameplay input flows through UI events via GameEvents
+- Menu keyboard navigation is handled by Unity's EventSystem + UI Navigation (built-in), not custom key polling
+- Camera controls (WASD, Q/E, scroll) are the only direct `Input` reads allowed, and only in `BattleCameraController`
 
 ### UI Polish & Feedback (Juice)
 
