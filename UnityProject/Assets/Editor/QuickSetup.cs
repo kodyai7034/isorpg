@@ -268,7 +268,8 @@ public static class QuickSetup
             so.ApplyModifiedProperties();
         }
 
-        panel.SetActive(false); // hidden until Act is selected
+        // Don't deactivate here — AbilityMenuUI.Awake() subscribes to events
+        // then calls Hide() itself. If we deactivate here, Awake never runs.
         return panel;
     }
 
