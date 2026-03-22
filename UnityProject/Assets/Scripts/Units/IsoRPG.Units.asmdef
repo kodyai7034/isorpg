@@ -1,7 +1,7 @@
 {
     "name": "IsoRPG.Units",
     "rootNamespace": "IsoRPG.Units",
-    "references": ["IsoRPG.Core"],
+    "references": ["IsoRPG.Core", "IsoRPG.Map"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -28,14 +28,13 @@ namespace IsoRPG.Battle.States
                 return;
             }
 
-            // Show UI menu if available
-            var ui = UIManager.Instance;
-            if (ui != null && ui.AbilityMenu != null)
-            {
-                ui.AbilityMenu.Show(_availableAbilities, ctx.ActiveUnit.CurrentMP);
-                ui.AbilityMenu.OnAbilitySelected += OnAbilitySelected;
-                ui.AbilityMenu.OnCancelled += OnCancelled;
-            }
+            // Request UI to show ability menu via event
+            GameEvents.ShowAbilityMenu.Raise(new AbilityMenuRequestArgs(
+                _availableAbilities, ctx.ActiveUnit.CurrentMP));
+
+            // Subscribe to UI response events
+            GameEvents.AbilitySelected.Subscribe(OnAbilitySelected);
+            GameEvents.AbilitySelectionCancelled.Subscribe(OnCancelled);
 
             // Log for keyboard fallback
             string list = "[Abilities] ";
@@ -76,13 +75,9 @@ namespace IsoRPG.Battle.States
 
         public void Exit(BattleContext ctx)
         {
-            var ui = UIManager.Instance;
-            if (ui != null && ui.AbilityMenu != null)
-            {
-                ui.AbilityMenu.OnAbilitySelected -= OnAbilitySelected;
-                ui.AbilityMenu.OnCancelled -= OnCancelled;
-                ui.AbilityMenu.Hide();
-            }
+            GameEvents.AbilitySelected.Unsubscribe(OnAbilitySelected);
+            GameEvents.AbilitySelectionCancelled.Unsubscribe(OnCancelled);
+            GameEvents.HideAbilityMenu.Raise();
         }
 
         private void OnAbilitySelected(AbilityData ability)

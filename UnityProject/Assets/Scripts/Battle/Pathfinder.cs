@@ -81,7 +81,7 @@ namespace IsoRPG.Battle
             }
 
             var visited = new Dictionary<Vector2Int, PathNode>();
-            var frontier = new PriorityQueue<Vector2Int, int>();
+            var frontier = new SimplePriorityQueue<Vector2Int, int>();
 
             var startNode = new PathNode
             {

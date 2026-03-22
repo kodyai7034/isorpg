@@ -1,7 +1,7 @@
 {
     "name": "IsoRPG.UI",
     "rootNamespace": "IsoRPG.UI",
-    "references": ["IsoRPG.Core", "IsoRPG.Battle", "IsoRPG.Units"],
+    "references": ["IsoRPG.Core", "IsoRPG.Battle", "IsoRPG.Units", "IsoRPG.Map", "Unity.TextMeshPro", "UnityEngine.UI"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

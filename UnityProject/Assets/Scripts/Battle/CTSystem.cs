@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using IsoRPG.Core;
 using IsoRPG.Units;
 
 namespace IsoRPG.Battle
