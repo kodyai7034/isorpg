@@ -20,8 +20,8 @@ namespace IsoRPG.Tests
         {
             var map = MapGenerator.CreateFlatMap(10, 10);
             var unit = new UnitInstance("Test", 0, 1, new Vector2Int(5, 5));
-            unit.Stats = new ComputedStats { Move = 3, Jump = 3, Speed = 5, MaxHP = 100 };
-            unit.CurrentHP = 100;
+            unit.SetStats(new ComputedStats { Move = 3, Jump = 3, Speed = 5, MaxHP = 100 };
+            unit.SetHP(100);
 
             var result = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
 
@@ -38,8 +38,8 @@ namespace IsoRPG.Tests
             map.Tiles[2 * 5 + 2] = TileData.Create(2, 2, 0, TerrainType.Water);
 
             var unit = new UnitInstance("Test", 0, 1, new Vector2Int(2, 0));
-            unit.Stats = new ComputedStats { Move = 4, Jump = 3, Speed = 5, MaxHP = 100 };
-            unit.CurrentHP = 100;
+            unit.SetStats(new ComputedStats { Move = 4, Jump = 3, Speed = 5, MaxHP = 100 };
+            unit.SetHP(100);
 
             var result = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
             Assert.IsFalse(result.CanMoveTo(new Vector2Int(2, 2)));
@@ -52,8 +52,8 @@ namespace IsoRPG.Tests
             map.Tiles[2 * 5 + 2] = TileData.Create(2, 2, 5, TerrainType.Stone);
 
             var unit = new UnitInstance("Test", 0, 1, new Vector2Int(2, 1));
-            unit.Stats = new ComputedStats { Move = 4, Jump = 2, Speed = 5, MaxHP = 100 };
-            unit.CurrentHP = 100;
+            unit.SetStats(new ComputedStats { Move = 4, Jump = 2, Speed = 5, MaxHP = 100 });
+            unit.SetHP(100);
 
             var result = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
             Assert.IsFalse(result.CanMoveTo(new Vector2Int(2, 2)));
@@ -64,12 +64,12 @@ namespace IsoRPG.Tests
         {
             var map = MapGenerator.CreateFlatMap(5, 5);
             var player = new UnitInstance("Player", 0, 1, new Vector2Int(0, 0));
-            player.Stats = new ComputedStats { Move = 4, Jump = 3, Speed = 5, MaxHP = 100 };
-            player.CurrentHP = 100;
+            player.SetStats(new ComputedStats { Move = 4, Jump = 3, Speed = 5, MaxHP = 100 };
+            player.SetHP(100);
 
             var enemy = new UnitInstance("Enemy", 1, 1, new Vector2Int(1, 0));
-            enemy.Stats = new ComputedStats { Move = 4, Jump = 3, Speed = 5, MaxHP = 100 };
-            enemy.CurrentHP = 100;
+            enemy.SetStats(new ComputedStats { Move = 4, Jump = 3, Speed = 5, MaxHP = 100 };
+            enemy.SetHP(100);
 
             var allUnits = new List<UnitInstance> { player, enemy };
             var result = Pathfinder.GetReachableTiles(map, player, allUnits);
@@ -82,8 +82,8 @@ namespace IsoRPG.Tests
         {
             var map = MapGenerator.CreateFlatMap(5, 5);
             var unit = new UnitInstance("Test", 0, 1, new Vector2Int(0, 0));
-            unit.Stats = new ComputedStats { Move = 10, Jump = 3, Speed = 5, MaxHP = 100 };
-            unit.CurrentHP = 100;
+            unit.SetStats(new ComputedStats { Move = 10, Jump = 3, Speed = 5, MaxHP = 100 });
+            unit.SetHP(100);
 
             var result = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
             var path = Pathfinder.ReconstructPath(result, new Vector2Int(0, 0), new Vector2Int(2, 2));
