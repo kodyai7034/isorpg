@@ -1,31 +1,52 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using IsoRPG.Core;
 using IsoRPG.Map;
 using IsoRPG.Units;
 
 namespace IsoRPG.Battle
 {
+    /// <summary>
+    /// Intermediate node for pathfinding. Tracks cost and path reconstruction.
+    /// </summary>
     public struct PathNode
     {
+        /// <summary>Grid position of this node.</summary>
         public Vector2Int Position;
+        /// <summary>Total movement cost from start to this node.</summary>
         public int CostSoFar;
+        /// <summary>Grid position of the previous node in the path.</summary>
         public Vector2Int CameFrom;
+        /// <summary>Whether a unit can stop on this tile (false if occupied by ally).</summary>
+        public bool CanStop;
     }
 
     /// <summary>
-    /// Grid pathfinding with terrain cost, elevation/jump, and collision.
-    /// Pure logic — no MonoBehaviour.
+    /// Grid pathfinding with terrain cost, elevation/jump constraints, and unit collision.
+    /// Pure logic — no MonoBehaviour dependency.
+    ///
+    /// Movement rules:
+    /// - Cannot enter unwalkable tiles (water, lava)
+    /// - Cannot enter tiles occupied by enemy units
+    /// - Can pass through allied units but cannot stop on them
+    /// - Cannot traverse elevation differences greater than unit's Jump stat
+    /// - Forest costs 2 movement points, all other walkable terrain costs 1
     /// </summary>
     public static class Pathfinder
     {
-        private static readonly Vector2Int[] Neighbors = {
+        private static readonly Vector2Int[] Neighbors =
+        {
             new(0, 1), new(0, -1), new(1, 0), new(-1, 0)
         };
 
         /// <summary>
-        /// Returns all reachable tiles within the unit's move range.
+        /// Calculate all tiles reachable by a unit within their movement range.
         /// </summary>
+        /// <param name="map">The battle map data.</param>
+        /// <param name="unit">The unit to calculate movement for.</param>
+        /// <param name="allUnits">All units on the battlefield (for collision).</param>
+        /// <returns>Dictionary of reachable positions to their path nodes. Only includes tiles the unit can stop on.</returns>
         public static Dictionary<Vector2Int, PathNode> GetReachableTiles(
             BattleMapData map, UnitInstance unit, List<UnitInstance> allUnits)
         {
@@ -40,7 +61,8 @@ namespace IsoRPG.Battle
             {
                 Position = start,
                 CostSoFar = 0,
-                CameFrom = start
+                CameFrom = start,
+                CanStop = true
             };
             visited[start] = startNode;
             frontier.Enqueue(start, 0);
@@ -54,31 +76,40 @@ namespace IsoRPG.Battle
                 {
                     var next = current + offset;
 
-                    if (!map.InBounds(next)) continue;
-
-                    var tile = map.GetTile(next);
-                    if (!tile.walkable) continue;
-
-                    // Elevation check
-                    var currentTile = map.GetTile(current);
-                    if (Mathf.Abs(tile.elevation - currentTile.elevation) > jumpHeight)
+                    if (!map.TryGetTile(next, out var nextTile))
                         continue;
 
-                    // Collision — can't end on enemy, can pass through allies
-                    var occupant = allUnits.FirstOrDefault(u => u.GridPosition == next && u.IsAlive);
+                    if (!nextTile.Walkable)
+                        continue;
+
+                    // Elevation check
+                    if (!map.TryGetTile(current, out var currentTile))
+                        continue;
+
+                    if (Mathf.Abs(nextTile.Elevation - currentTile.Elevation) > jumpHeight)
+                        continue;
+
+                    // Enemy collision — cannot enter enemy tiles at all
+                    var occupant = allUnits.FirstOrDefault(u =>
+                        u.GridPosition == next && u.IsAlive && u != unit);
                     if (occupant != null && occupant.Team != unit.Team)
                         continue;
 
-                    int newCost = currentNode.CostSoFar + tile.moveCost;
-                    if (newCost > moveRange) continue;
+                    int newCost = currentNode.CostSoFar + nextTile.MoveCost;
+                    if (newCost > moveRange)
+                        continue;
 
                     if (!visited.ContainsKey(next) || visited[next].CostSoFar > newCost)
                     {
+                        // Allied occupant: can traverse but not stop
+                        bool canStop = occupant == null;
+
                         var node = new PathNode
                         {
                             Position = next,
                             CostSoFar = newCost,
-                            CameFrom = current
+                            CameFrom = current,
+                            CanStop = canStop
                         };
                         visited[next] = node;
                         frontier.Enqueue(next, newCost);
@@ -86,24 +117,25 @@ namespace IsoRPG.Battle
                 }
             }
 
-            // Remove tiles occupied by other units (can pass through allies but not stop on them)
-            var blocked = new List<Vector2Int>();
-            foreach (var pos in visited.Keys)
+            // Return only tiles the unit can actually stop on
+            var stoppable = new Dictionary<Vector2Int, PathNode>();
+            foreach (var kvp in visited)
             {
-                if (pos == start) continue;
-                var occupant = allUnits.FirstOrDefault(u => u.GridPosition == pos && u.IsAlive && u != unit);
-                if (occupant != null)
-                    blocked.Add(pos);
+                if (kvp.Value.CanStop)
+                    stoppable[kvp.Key] = kvp.Value;
             }
-            foreach (var pos in blocked)
-                visited.Remove(pos);
 
-            return visited;
+            return stoppable;
         }
 
         /// <summary>
-        /// Reconstruct path from start to target using the visited nodes.
+        /// Reconstruct the path from start to target using visited node data.
+        /// Uses the full visited set (including non-stoppable tiles) for path reconstruction.
         /// </summary>
+        /// <param name="visited">Visited nodes from GetReachableTiles (stoppable only).</param>
+        /// <param name="start">Starting grid position.</param>
+        /// <param name="target">Target grid position.</param>
+        /// <returns>Ordered list of positions from start (exclusive) to target (inclusive), or null if unreachable.</returns>
         public static List<Vector2Int> ReconstructPath(
             Dictionary<Vector2Int, PathNode> visited, Vector2Int start, Vector2Int target)
         {
@@ -113,10 +145,17 @@ namespace IsoRPG.Battle
             var path = new List<Vector2Int>();
             var current = target;
 
-            while (current != start)
+            int safety = 1000;
+            while (current != start && safety-- > 0)
             {
                 path.Add(current);
                 current = visited[current].CameFrom;
+            }
+
+            if (safety <= 0)
+            {
+                Debug.LogError("[Pathfinder] Path reconstruction safety limit reached — possible cycle.");
+                return null;
             }
 
             path.Reverse();
