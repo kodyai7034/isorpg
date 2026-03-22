@@ -1,14 +1,17 @@
+using System;
 using UnityEngine;
 
 namespace IsoRPG.Map
 {
+    /// <summary>
+    /// Orthographic camera controller for isometric battle view.
+    /// Supports WASD/arrow pan, scroll zoom, Q/E rotation, middle-mouse drag, and smooth follow.
+    /// </summary>
     [RequireComponent(typeof(Camera))]
     public class BattleCameraController : MonoBehaviour
     {
         [Header("Pan")]
         [SerializeField] private float panSpeed = 5f;
-        [SerializeField] private bool enableEdgePan = true;
-        [SerializeField] private float edgePanThreshold = 20f;
 
         [Header("Zoom")]
         [SerializeField] private float zoomSpeed = 1f;
@@ -19,56 +22,77 @@ namespace IsoRPG.Map
         [SerializeField] private float followSpeed = 5f;
 
         private Camera _camera;
-        private Transform _followTarget;
-        private bool _isFollowing;
-        private int _rotationIndex; // 0-3 for 4-way rotation
+        private int _rotationIndex;
+        private Vector3 _focusTarget;
+        private bool _isFocusing;
+        private Vector3 _dragOrigin;
+        private bool _isDragging;
+
+        /// <summary>Current rotation step (0-3). Each step is 90° clockwise.</summary>
+        public int RotationIndex => _rotationIndex;
+
+        /// <summary>Fired when camera rotation changes. Passes new rotation index (0-3).</summary>
+        public event Action<int> OnCameraRotated;
 
         private void Awake()
         {
             _camera = GetComponent<Camera>();
             _camera.orthographic = true;
-            _camera.orthographicSize = 5f;
+            if (_camera.orthographicSize < minZoom || _camera.orthographicSize > maxZoom)
+                _camera.orthographicSize = 5f;
         }
 
         private void Update()
         {
-            HandlePan();
+            HandleKeyboardPan();
+            HandleMiddleMouseDrag();
             HandleZoom();
             HandleRotation();
-            HandleFollow();
+            HandleFocus();
         }
 
-        private void HandlePan()
+        private void HandleKeyboardPan()
         {
             var move = Vector3.zero;
 
-            // WASD / Arrow keys
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) move.y += 1;
             if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) move.y -= 1;
             if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) move.x -= 1;
             if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) move.x += 1;
 
-            // Edge pan
-            if (enableEdgePan)
+            if (move.sqrMagnitude > 0.01f)
             {
-                var mousePos = Input.mousePosition;
-                if (mousePos.x < edgePanThreshold) move.x -= 1;
-                if (mousePos.x > Screen.width - edgePanThreshold) move.x += 1;
-                if (mousePos.y < edgePanThreshold) move.y -= 1;
-                if (mousePos.y > Screen.height - edgePanThreshold) move.y += 1;
+                _isFocusing = false;
+                transform.position += move.normalized * (panSpeed * Time.deltaTime);
+            }
+        }
+
+        private void HandleMiddleMouseDrag()
+        {
+            if (Input.GetMouseButtonDown(2))
+            {
+                _isDragging = true;
+                _dragOrigin = _camera.ScreenToWorldPoint(Input.mousePosition);
+                _isFocusing = false;
             }
 
-            if (move != Vector3.zero)
+            if (Input.GetMouseButton(2) && _isDragging)
             {
-                _isFollowing = false;
-                transform.position += move.normalized * panSpeed * Time.deltaTime;
+                var currentWorld = _camera.ScreenToWorldPoint(Input.mousePosition);
+                var delta = _dragOrigin - currentWorld;
+                transform.position += delta;
+            }
+
+            if (Input.GetMouseButtonUp(2))
+            {
+                _isDragging = false;
             }
         }
 
         private void HandleZoom()
         {
             float scroll = Input.GetAxis("Mouse ScrollWheel");
-            if (Mathf.Abs(scroll) > 0.01f)
+            if (Mathf.Abs(scroll) > 0.001f)
             {
                 _camera.orthographicSize -= scroll * zoomSpeed;
                 _camera.orthographicSize = Mathf.Clamp(_camera.orthographicSize, minZoom, maxZoom);
@@ -80,35 +104,48 @@ namespace IsoRPG.Map
             if (Input.GetKeyDown(KeyCode.Q))
             {
                 _rotationIndex = (_rotationIndex + 1) % 4;
-                // TODO: Re-sort all tiles and units for new rotation
+                OnCameraRotated?.Invoke(_rotationIndex);
             }
-            if (Input.GetKeyDown(KeyCode.E))
+            else if (Input.GetKeyDown(KeyCode.E))
             {
-                _rotationIndex = (_rotationIndex + 3) % 4;
+                _rotationIndex = (_rotationIndex + 3) % 4; // +3 == -1 mod 4
+                OnCameraRotated?.Invoke(_rotationIndex);
             }
         }
 
-        private void HandleFollow()
+        private void HandleFocus()
         {
-            if (_isFollowing && _followTarget != null)
+            if (!_isFocusing) return;
+
+            var target = new Vector3(_focusTarget.x, _focusTarget.y, transform.position.z);
+            transform.position = Vector3.Lerp(transform.position, target, followSpeed * Time.deltaTime);
+
+            // Stop focusing when close enough
+            if (Vector3.Distance(transform.position, target) < 0.01f)
             {
-                var target = new Vector3(_followTarget.position.x, _followTarget.position.y, transform.position.z);
-                transform.position = Vector3.Lerp(transform.position, target, followSpeed * Time.deltaTime);
+                transform.position = target;
+                _isFocusing = false;
             }
         }
 
-        public void FollowTarget(Transform target)
+        /// <summary>
+        /// Smoothly pan camera to center on a world position.
+        /// </summary>
+        /// <param name="worldPosition">Target position to center on.</param>
+        public void FocusOn(Vector3 worldPosition)
         {
-            _followTarget = target;
-            _isFollowing = true;
+            _focusTarget = worldPosition;
+            _isFocusing = true;
         }
 
-        public void CenterOn(Vector3 position)
+        /// <summary>
+        /// Instantly snap camera to a world position (no lerp).
+        /// </summary>
+        /// <param name="worldPosition">Target position to center on.</param>
+        public void SnapTo(Vector3 worldPosition)
         {
-            _isFollowing = false;
-            transform.position = new Vector3(position.x, position.y, transform.position.z);
+            _isFocusing = false;
+            transform.position = new Vector3(worldPosition.x, worldPosition.y, transform.position.z);
         }
-
-        public int RotationIndex => _rotationIndex;
     }
 }

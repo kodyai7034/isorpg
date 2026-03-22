@@ -33,7 +33,7 @@ namespace IsoRPG.Battle
 
             _stateMachine = new StateMachine<BattleContext>(_context);
 
-            Debug.Log($"Battle started with {_context.Units.Count} units on {map.mapName}");
+            Debug.Log($"Battle started with {_context.Units.Count} units on {map.MapName}");
             foreach (var unit in _context.Units)
                 Debug.Log($"  {unit}");
 
@@ -51,9 +51,9 @@ namespace IsoRPG.Battle
             var units = new List<UnitInstance>();
 
             // Player units
-            if (map.spawnZones.Length > 0)
+            if (map.SpawnZones != null && map.SpawnZones.Length > 0)
             {
-                var playerSpawns = map.spawnZones[0].tiles;
+                var playerSpawns = map.SpawnZones[0].Tiles;
                 var playerNames = new[] { "Ramza", "Agrias", "Mustadio" };
                 for (int i = 0; i < Mathf.Min(playerNames.Length, playerSpawns.Length); i++)
                 {
@@ -62,9 +62,9 @@ namespace IsoRPG.Battle
             }
 
             // Enemy units
-            if (map.spawnZones.Length > 1)
+            if (map.SpawnZones != null && map.SpawnZones.Length > 1)
             {
-                var enemySpawns = map.spawnZones[1].tiles;
+                var enemySpawns = map.SpawnZones[1].Tiles;
                 var enemyNames = new[] { "Goblin A", "Goblin B", "Goblin C" };
                 for (int i = 0; i < Mathf.Min(enemyNames.Length, enemySpawns.Length); i++)
                 {
