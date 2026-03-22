@@ -30,6 +30,13 @@ namespace IsoRPG.Battle.States
                 return;
             }
 
+            // Act
+            if (!ctx.ActiveUnitActed && Input.GetKeyDown(KeyCode.A))
+            {
+                machine.ChangeState(new SelectAbilityState());
+                return;
+            }
+
             // Wait
             if (Input.GetKeyDown(KeyCode.W))
             {
@@ -52,9 +59,9 @@ namespace IsoRPG.Battle.States
                     case MoveCommand:
                         ctx.ActiveUnitMoved = false;
                         break;
-                    // Future: case AttackCommand: ctx.ActiveUnitActed = false; break;
-                    // WaitCommand undo is a no-op on flags (Wait transitions immediately to EndTurn,
-                    // so it's never undoable from SelectActionState in normal flow)
+                    case AttackCommand:
+                        ctx.ActiveUnitActed = false;
+                        break;
                 }
 
                 Debug.Log($"[Undo] Reverted: {undone?.Description}");

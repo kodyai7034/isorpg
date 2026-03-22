@@ -122,6 +122,44 @@ namespace IsoRPG.Units
         /// <summary>Set of permanently learned ability IDs.</summary>
         public HashSet<int> LearnedAbilities { get; } = new();
 
+        // --- Status Effects ---
+
+        /// <summary>Active status effects on this unit.</summary>
+        public List<StatusEffectInstance> StatusEffects { get; } = new();
+
+        /// <summary>Add a status effect. Replaces existing effect of the same type.</summary>
+        public void AddStatus(StatusEffectInstance status)
+        {
+            // Remove existing status of same type (refresh, not stack)
+            StatusEffects.RemoveAll(s => s.Type == status.Type);
+            StatusEffects.Add(status);
+        }
+
+        /// <summary>Remove a specific status effect by ID.</summary>
+        public void RemoveStatus(EntityId statusId)
+        {
+            StatusEffects.RemoveAll(s => s.Id == statusId);
+        }
+
+        /// <summary>Check if the unit has a specific status type active.</summary>
+        public bool HasStatus(StatusType type)
+        {
+            return StatusEffects.Exists(s => s.Type == type && !s.IsExpired);
+        }
+
+        /// <summary>
+        /// Tick all status effects (call at turn start). Removes expired effects.
+        /// </summary>
+        public void TickStatuses()
+        {
+            // Tick in reverse to safely handle removal
+            for (int i = StatusEffects.Count - 1; i >= 0; i--)
+            {
+                StatusEffects[i].Tick(this);
+            }
+            StatusEffects.RemoveAll(s => s.IsExpired);
+        }
+
         // --- Events ---
 
         /// <summary>Fired when HP changes. Args: (oldHP, newHP).</summary>
