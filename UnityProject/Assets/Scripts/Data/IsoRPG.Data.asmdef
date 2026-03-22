@@ -1,0 +1,14 @@
+{
+    "name": "IsoRPG.Data",
+    "rootNamespace": "IsoRPG.Data",
+    "references": ["IsoRPG.Core"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
