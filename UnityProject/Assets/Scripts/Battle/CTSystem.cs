@@ -26,7 +26,17 @@ namespace IsoRPG.Battle
             {
                 foreach (var unit in living)
                 {
-                    unit.CT += unit.Stats.Speed;
+                    int speed = unit.Stats.Speed;
+
+                    // Apply Haste/Slow status modifiers
+                    foreach (var status in unit.StatusEffects)
+                    {
+                        float mod = status.GetModifier(Units.StatusModifierType.Speed);
+                        if (mod != 1.0f)
+                            speed = UnityEngine.Mathf.Max(1, UnityEngine.Mathf.FloorToInt(speed * mod));
+                    }
+
+                    unit.CT += speed;
                 }
 
                 var ready = living
