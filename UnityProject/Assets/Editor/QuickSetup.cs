@@ -182,19 +182,19 @@ public static class QuickSetup
         panelRect.anchorMax = new Vector2(1, 0);
         panelRect.pivot = new Vector2(1, 0);
         panelRect.anchoredPosition = new Vector2(-20, 20);
-        panelRect.sizeDelta = new Vector2(180, 220);
+        panelRect.sizeDelta = new Vector2(220, 260);
 
         var panelImg = panel.AddComponent<UnityEngine.UI.Image>();
-        panelImg.color = new Color(0.08f, 0.08f, 0.12f, 0.92f);
+        SetPanelSprite(panelImg, "Panels/action_menu", new Color(0.08f, 0.08f, 0.12f, 0.92f));
 
         var layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-        layout.padding = new RectOffset(10, 10, 10, 10);
+        layout.padding = new RectOffset(20, 14, 20, 14);
         layout.spacing = 8;
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
         layout.childAlignment = TextAnchor.UpperCenter;
 
-        // Buttons
+        // Buttons with sprite art
         var moveBtn = MakeMenuButton("Move", panel.transform, new Color(0.2f, 0.45f, 0.75f));
         var actBtn = MakeMenuButton("Act", panel.transform, new Color(0.75f, 0.25f, 0.25f));
         var waitBtn = MakeMenuButton("Wait", panel.transform, new Color(0.45f, 0.45f, 0.45f));
@@ -235,13 +235,13 @@ public static class QuickSetup
         panelRect.anchorMax = new Vector2(1, 0);
         panelRect.pivot = new Vector2(1, 0);
         panelRect.anchoredPosition = new Vector2(-20, 20);
-        panelRect.sizeDelta = new Vector2(180, 250);
+        panelRect.sizeDelta = new Vector2(220, 290);
 
         var panelImg = panel.AddComponent<UnityEngine.UI.Image>();
-        panelImg.color = new Color(0.1f, 0.06f, 0.06f, 0.92f);
+        SetPanelSprite(panelImg, "Panels/combat_menu", new Color(0.1f, 0.06f, 0.06f, 0.92f));
 
         var layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-        layout.padding = new RectOffset(10, 10, 10, 10);
+        layout.padding = new RectOffset(20, 14, 20, 14);
         layout.spacing = 8;
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
@@ -277,13 +277,13 @@ public static class QuickSetup
         panelRect.anchorMax = new Vector2(1, 0);
         panelRect.pivot = new Vector2(1, 0);
         panelRect.anchoredPosition = new Vector2(-20, 20);
-        panelRect.sizeDelta = new Vector2(220, 280);
+        panelRect.sizeDelta = new Vector2(250, 320);
 
         var panelImg = panel.AddComponent<UnityEngine.UI.Image>();
-        panelImg.color = new Color(0.08f, 0.08f, 0.12f, 0.92f);
+        SetPanelSprite(panelImg, "Panels/ability_menu", new Color(0.08f, 0.08f, 0.12f, 0.92f));
 
         var layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-        layout.padding = new RectOffset(10, 10, 10, 10);
+        layout.padding = new RectOffset(20, 14, 20, 14);
         layout.spacing = 6;
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
@@ -325,20 +325,43 @@ public static class QuickSetup
     {
         var entry = new GameObject("AbilityEntry");
         var rect = entry.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(200, 40);
+        rect.sizeDelta = new Vector2(210, 40);
 
         var img = entry.AddComponent<UnityEngine.UI.Image>();
-        img.color = new Color(0.15f, 0.15f, 0.22f, 0.9f);
+        var abilityNormal = LoadUISprite("Buttons/btn_ability_normal");
+        if (abilityNormal != null)
+        {
+            img.sprite = abilityNormal;
+            img.type = UnityEngine.UI.Image.Type.Sliced;
+            img.color = Color.white;
+        }
+        else
+        {
+            img.color = new Color(0.15f, 0.15f, 0.22f, 0.9f);
+        }
 
-        entry.AddComponent<UnityEngine.UI.Button>();
+        var btn = entry.AddComponent<UnityEngine.UI.Button>();
+        var abilityHover = LoadUISprite("Buttons/btn_ability_hover");
+        var abilityPressed = LoadUISprite("Buttons/btn_ability_pressed");
+        var abilityDisabled = LoadUISprite("Buttons/btn_ability_disabled");
+        if (abilityNormal != null)
+        {
+            btn.transition = UnityEngine.UI.Selectable.Transition.SpriteSwap;
+            var states = new UnityEngine.UI.SpriteState();
+            states.highlightedSprite = abilityHover;
+            states.pressedSprite = abilityPressed;
+            states.disabledSprite = abilityDisabled;
+            states.selectedSprite = abilityHover;
+            btn.spriteState = states;
+        }
 
-        // Label
+        // Label — offset for gauntlet space
         var textObj = new GameObject("Label");
         textObj.transform.SetParent(entry.transform, false);
         var textRect = textObj.AddComponent<RectTransform>();
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = new Vector2(8, 2);
+        textRect.offsetMin = new Vector2(36, 2);
         textRect.offsetMax = new Vector2(-8, -2);
         var tmp = textObj.AddComponent<TMPro.TextMeshProUGUI>();
         tmp.text = "Ability";
@@ -362,13 +385,13 @@ public static class QuickSetup
         panelRect.anchorMax = new Vector2(1, 0);
         panelRect.pivot = new Vector2(1, 0);
         panelRect.anchoredPosition = new Vector2(-20, 20);
-        panelRect.sizeDelta = new Vector2(240, 130);
+        panelRect.sizeDelta = new Vector2(260, 140);
 
         var panelImg = panel.AddComponent<UnityEngine.UI.Image>();
-        panelImg.color = new Color(0.12f, 0.2f, 0.4f, 0.92f);
+        SetPanelSprite(panelImg, "Panels/selection_context", new Color(0.12f, 0.2f, 0.4f, 0.92f));
 
         var layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
-        layout.padding = new RectOffset(12, 12, 12, 12);
+        layout.padding = new RectOffset(20, 14, 16, 14);
         layout.spacing = 8;
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
@@ -432,7 +455,8 @@ public static class QuickSetup
         rect.offsetMax = Vector2.zero;
 
         var img = bannerPanel.AddComponent<UnityEngine.UI.Image>();
-        img.color = new Color(0.15f, 0.3f, 0.6f, 0.9f);
+        // Banner sprite — default to blue, TurnBannerUI swaps to red for enemies at runtime
+        SetPanelSprite(img, "Panels/turn_banner_blue", new Color(0.15f, 0.3f, 0.6f, 0.9f));
 
         var textObj = new GameObject("NameText");
         textObj.transform.SetParent(bannerPanel.transform, false);
@@ -461,40 +485,97 @@ public static class QuickSetup
         bannerPanel.SetActive(false);
     }
 
-    static GameObject MakeMenuButton(string label, Transform parent, Color color)
+    static GameObject MakeMenuButton(string label, Transform parent, Color fallbackColor,
+        string btnType = "standard")
     {
         var btnObj = new GameObject(label + "Button");
         btnObj.transform.SetParent(parent, false);
         var rect = btnObj.AddComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(160, 42);
+        rect.sizeDelta = btnType == "ability" ? new Vector2(200, 40) :
+                         btnType == "wide" ? new Vector2(240, 50) :
+                         new Vector2(180, 42);
 
         var img = btnObj.AddComponent<UnityEngine.UI.Image>();
-        img.color = color;
+        img.preserveAspect = false;
+
+        // Try to load sprite art — fall back to solid color if not found
+        var normalSprite = LoadUISprite($"Buttons/btn_{btnType}_normal");
+        var hoverSprite = LoadUISprite($"Buttons/btn_{btnType}_hover");
+        var pressedSprite = LoadUISprite($"Buttons/btn_{btnType}_pressed");
+        var disabledSprite = LoadUISprite($"Buttons/btn_{btnType}_disabled");
 
         var btn = btnObj.AddComponent<UnityEngine.UI.Button>();
-        var colors = btn.colors;
-        colors.normalColor = color;
-        colors.highlightedColor = color * 1.3f;
-        colors.pressedColor = color * 0.7f;
-        colors.selectedColor = color * 1.2f;
-        colors.disabledColor = new Color(0.25f, 0.25f, 0.25f, 0.5f);
-        btn.colors = colors;
 
+        if (normalSprite != null)
+        {
+            // Use sprite art with SpriteSwap
+            img.sprite = normalSprite;
+            img.type = UnityEngine.UI.Image.Type.Sliced;
+            img.color = Color.white;
+
+            btn.transition = UnityEngine.UI.Selectable.Transition.SpriteSwap;
+            var states = new UnityEngine.UI.SpriteState();
+            states.highlightedSprite = hoverSprite;
+            states.pressedSprite = pressedSprite;
+            states.disabledSprite = disabledSprite;
+            states.selectedSprite = hoverSprite;
+            btn.spriteState = states;
+        }
+        else
+        {
+            // Fallback to solid color
+            img.color = fallbackColor;
+            var colors = btn.colors;
+            colors.normalColor = fallbackColor;
+            colors.highlightedColor = fallbackColor * 1.3f;
+            colors.pressedColor = fallbackColor * 0.7f;
+            colors.selectedColor = fallbackColor * 1.2f;
+            colors.disabledColor = new Color(0.25f, 0.25f, 0.25f, 0.5f);
+            btn.colors = colors;
+        }
+
+        // Text — offset right to leave room for gauntlet selector
         var textObj = new GameObject("Text");
         textObj.transform.SetParent(btnObj.transform, false);
         var textRect = textObj.AddComponent<RectTransform>();
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
+        textRect.offsetMin = new Vector2(36, 0); // 36px left margin for gauntlet
+        textRect.offsetMax = new Vector2(-8, 0);
         var tmp = textObj.AddComponent<TMPro.TextMeshProUGUI>();
         tmp.text = label;
-        tmp.fontSize = 20;
-        tmp.alignment = TMPro.TextAlignmentOptions.Center;
-        tmp.color = Color.white;
+        tmp.fontSize = 18;
+        tmp.alignment = TMPro.TextAlignmentOptions.MidlineLeft;
+        tmp.color = new Color(0.96f, 0.91f, 0.79f); // cream #f5e6ca
         tmp.fontStyle = TMPro.FontStyles.Bold;
 
         return btnObj;
+    }
+
+    /// <summary>Load a sprite from Assets/Sprites/UI/. Returns null if not found.</summary>
+    static Sprite LoadUISprite(string subpath)
+    {
+        string path = $"Assets/Sprites/UI/{subpath}.png";
+        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        if (sprite == null)
+            Debug.LogWarning($"[QuickSetup] Sprite not found: {path}");
+        return sprite;
+    }
+
+    /// <summary>Set an Image component to use a panel sprite with 9-slice, or fallback color.</summary>
+    static void SetPanelSprite(UnityEngine.UI.Image img, string spritePath, Color fallbackColor)
+    {
+        var sprite = LoadUISprite(spritePath);
+        if (sprite != null)
+        {
+            img.sprite = sprite;
+            img.type = UnityEngine.UI.Image.Type.Sliced;
+            img.color = Color.white;
+        }
+        else
+        {
+            img.color = fallbackColor;
+        }
     }
 
     static void SetButtonNavigation(GameObject btnObj, GameObject upObj, GameObject downObj)
