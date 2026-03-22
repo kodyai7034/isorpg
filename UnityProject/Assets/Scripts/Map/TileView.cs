@@ -68,6 +68,9 @@ namespace IsoRPG.Map
 
             transform.position = IsoMath.GridToWorld(data.Position, data.Elevation);
             gameObject.name = $"Tile_{data.Position.x}_{data.Position.y}_E{data.Elevation}";
+
+            if (_renderer.sprite == null)
+                Debug.LogWarning($"[TileView] {gameObject.name} has NULL sprite! Tiles will be invisible.");
         }
 
         /// <summary>

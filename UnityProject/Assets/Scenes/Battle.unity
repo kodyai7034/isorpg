@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &876103952
+--- !u!1 &783781390
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,36 +127,39 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 876103954}
-  - component: {fileID: 876103953}
+  - component: {fileID: 783781392}
+  - component: {fileID: 783781391}
   m_Layer: 0
-  m_Name: IsometricGrid
+  m_Name: BattleManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &876103953
+--- !u!114 &783781391
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 876103952}
+  m_GameObject: {fileID: 783781390}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4137de4592e4e284a96707431cd1c6f5, type: 3}
+  m_Script: {fileID: 11500000, guid: 0bd3fa6d8c180db48b357dd2597741e3, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: IsoRPG.Map::IsoRPG.Map.IsometricGrid
-  mapData: {fileID: 0}
-  tilePrefab: {fileID: 868537761665368753, guid: 89d10e532e2800745a34bbfc8c5024ee, type: 3}
---- !u!4 &876103954
+  m_EditorClassIdentifier: IsoRPG.Battle::IsoRPG.Battle.BattleManager
+  grid: {fileID: 1535658218}
+  unitPrefab: {fileID: 530962332710875718, guid: 6d4c01da9ab4ef64bb6b152f31adb476, type: 3}
+  mapOverride: {fileID: 0}
+  rngSeed: 42
+  defaultAbilities: []
+--- !u!4 &783781392
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 876103952}
+  m_GameObject: {fileID: 783781390}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -165,7 +168,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &992702788
+--- !u!1 &1191928326
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -173,10 +176,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 992702792}
-  - component: {fileID: 992702791}
-  - component: {fileID: 992702790}
-  - component: {fileID: 992702789}
+  - component: {fileID: 1191928330}
+  - component: {fileID: 1191928329}
+  - component: {fileID: 1191928328}
+  - component: {fileID: 1191928327}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -184,13 +187,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &992702789
+--- !u!114 &1191928327
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 992702788}
+  m_GameObject: {fileID: 1191928326}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1d07e425232d5ab48ae712e47cbc4088, type: 3}
@@ -201,21 +204,21 @@ MonoBehaviour:
   minZoom: 2
   maxZoom: 10
   followSpeed: 5
---- !u!81 &992702790
+--- !u!81 &1191928328
 AudioListener:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 992702788}
+  m_GameObject: {fileID: 1191928326}
   m_Enabled: 1
---- !u!20 &992702791
+--- !u!20 &1191928329
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 992702788}
+  m_GameObject: {fileID: 1191928326}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
@@ -244,7 +247,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5
+  orthographic size: 4
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -260,22 +263,22 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!4 &992702792
+--- !u!4 &1191928330
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 992702788}
+  m_GameObject: {fileID: 1191928326}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalPosition: {x: 0, y: 1.5, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1158363513
+--- !u!1 &1535658217
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -283,39 +286,36 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1158363515}
-  - component: {fileID: 1158363514}
+  - component: {fileID: 1535658219}
+  - component: {fileID: 1535658218}
   m_Layer: 0
-  m_Name: BattleManager
+  m_Name: IsometricGrid
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1158363514
+--- !u!114 &1535658218
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1158363513}
+  m_GameObject: {fileID: 1535658217}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bd3fa6d8c180db48b357dd2597741e3, type: 3}
+  m_Script: {fileID: 11500000, guid: 4137de4592e4e284a96707431cd1c6f5, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: IsoRPG.Battle::IsoRPG.Battle.BattleManager
-  grid: {fileID: 876103953}
-  unitPrefab: {fileID: 530962332710875718, guid: 6d4c01da9ab4ef64bb6b152f31adb476, type: 3}
-  mapOverride: {fileID: 0}
-  rngSeed: 42
-  defaultAbilities: []
---- !u!4 &1158363515
+  m_EditorClassIdentifier: IsoRPG.Map::IsoRPG.Map.IsometricGrid
+  mapData: {fileID: 0}
+  tilePrefab: {fileID: 868537761665368753, guid: 89d10e532e2800745a34bbfc8c5024ee, type: 3}
+--- !u!4 &1535658219
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1158363513}
+  m_GameObject: {fileID: 1535658217}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -324,7 +324,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1618041460
+--- !u!1 &1667050770
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -332,8 +332,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1618041462}
-  - component: {fileID: 1618041461}
+  - component: {fileID: 1667050772}
+  - component: {fileID: 1667050771}
   m_Layer: 0
   m_Name: Directional Light
   m_TagString: Untagged
@@ -341,13 +341,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!108 &1618041461
+--- !u!108 &1667050771
 Light:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1618041460}
+  m_GameObject: {fileID: 1667050770}
   m_Enabled: 1
   serializedVersion: 12
   m_Type: 1
@@ -406,13 +406,13 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
---- !u!4 &1618041462
+--- !u!4 &1667050772
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1618041460}
+  m_GameObject: {fileID: 1667050770}
   serializedVersion: 2
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
   m_LocalPosition: {x: 0, y: 3, z: 0}
@@ -425,7 +425,7 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 992702792}
-  - {fileID: 1618041462}
-  - {fileID: 876103954}
-  - {fileID: 1158363515}
+  - {fileID: 1191928330}
+  - {fileID: 1667050772}
+  - {fileID: 1535658219}
+  - {fileID: 783781392}
