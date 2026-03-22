@@ -52,6 +52,56 @@ All player actions are driven through **on-screen UI menus and mouse clicks** �
 
 No gameplay actions are bound to keyboard keys. Keyboard shortcuts are only for non-gameplay functions (camera pan with WASD, zoom with scroll). The game must be fully playable with mouse alone. Battle states must NEVER use `Input.GetKeyDown` for gameplay actions — all gameplay input flows through UI button events via GameEvents.
 
+### UI Polish & Feedback (Juice)
+
+Menus are the primary interface in a tactics RPG — they must feel buttery smooth with constant feedback. Every player interaction gets at least two forms of feedback (audio + visual).
+
+**Audio Feedback (required on every interaction):**
+- Menu cursor move / hover → soft tick/click
+- Button confirm / select → satisfying "accept" chime
+- Cancel / back → soft "whoosh" or lower-pitched click
+- Invalid action (greyed out button) → dull buzz/thud
+- Hover over enemy unit → tension note
+- Hover over ally unit → warm tone
+- Undo → reverse "swoosh"
+- Turn start → brief announcement chime
+- Victory → fanfare
+- Defeat → somber tone
+
+**Visual Feedback (required on every interaction):**
+- Button hover → scale up slightly (1.05x) with ease-in-out tween
+- Button press → quick scale down (0.95x) then bounce back
+- Selected/active button → glowing border pulse or highlight sweep
+- Greyed-out buttons → desaturated + 50% transparency
+- Menu appear → slide in from edge with easing (never instant pop)
+- Menu disappear → slide out or fade (never instant vanish)
+- Turn start → unit portrait slides in, name banner animates across screen
+- Damage numbers → punch scale (start 2x big, shrink to 1x) + screen shake on crits
+- Healing numbers → gentle float up with green glow
+
+**Tile/Cursor Feedback:**
+- Tile hover → subtle bounce or glow pulse
+- Movement range tiles → gentle pulsing opacity (breathing effect)
+- Attack range tiles → sharper red pulse
+- Path preview → tiles light up sequentially in a cascade
+- Valid target hover → enemy highlight + damage preview tooltip appears
+- Invalid target → cursor tint red or X indicator
+
+**Transition Feedback:**
+- Turn transition → "whoosh" + banner showing unit name + team color
+- AI thinking → animated ellipsis or thinking indicator
+- Victory → screen flash + particle burst + fanfare
+- Defeat → screen darken + somber tone + slow fade
+
+**AI-Generated Menu Art (via Gemini):**
+- Menu panel backgrounds (ornate fantasy borders, parchment/stone textures)
+- Button art (4 states per button: normal, hover, pressed, disabled)
+- Unit portrait frames (team-colored ornate borders)
+- Turn banner background (scrollwork or flag motif)
+- Ability icons (one unique icon per ability)
+- Status effect icons (one per status type)
+- All art must be consistent pixel art style matching the game's aesthetic
+
 ### Defensive & Robust Code
 - Validate at system boundaries — never trust external input.
 - Guard against infinite loops, null references, and out-of-bounds access.
