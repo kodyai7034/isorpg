@@ -108,19 +108,50 @@ namespace IsoRPG.Units
         /// </summary>
         public int CT { get; set; }
 
-        // --- Job (placeholder until System 9) ---
+        // --- Job System ---
 
         /// <summary>Current job/class.</summary>
         public JobId CurrentJob { get; private set; }
 
-        /// <summary>Job levels per job.</summary>
+        /// <summary>Job levels per job (highest level achieved).</summary>
         public Dictionary<JobId, int> JobLevels { get; } = new();
 
         /// <summary>Accumulated job points per job.</summary>
         public Dictionary<JobId, int> JobPoints { get; } = new();
 
-        /// <summary>Set of permanently learned ability IDs.</summary>
+        /// <summary>Set of permanently learned ability IDs (AbilityData.GetInstanceID).</summary>
         public HashSet<int> LearnedAbilities { get; } = new();
+
+        // --- Ability Equip Slots (5-slot FFT system) ---
+
+        /// <summary>Secondary action set from another job. Null = none.</summary>
+        public JobId? SecondaryAbilitySet { get; set; }
+
+        /// <summary>Equipped reaction ability. Null = none.</summary>
+        public Battle.AbilityData EquippedReaction { get; set; }
+
+        /// <summary>Equipped support ability. Null = none.</summary>
+        public Battle.AbilityData EquippedSupport { get; set; }
+
+        /// <summary>Equipped movement ability. Null = none.</summary>
+        public Battle.AbilityData EquippedMovement { get; set; }
+
+        // --- Equipment ---
+
+        /// <summary>Equipped weapon. Null = unarmed.</summary>
+        public EquipmentData EquippedWeapon { get; set; }
+
+        /// <summary>Equipped armor. Null = unarmored.</summary>
+        public EquipmentData EquippedArmor { get; set; }
+
+        /// <summary>Equipped accessory. Null = none.</summary>
+        public EquipmentData EquippedAccessory { get; set; }
+
+        /// <summary>Change job. Called by JobSystem.</summary>
+        public void SetJob(JobId jobId)
+        {
+            CurrentJob = jobId;
+        }
 
         // --- Status Effects ---
 
