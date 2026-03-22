@@ -30,8 +30,8 @@ namespace IsoRPG.Battle
     /// - Cannot enter unwalkable tiles (water, lava)
     /// - Cannot enter tiles occupied by enemy units
     /// - Can pass through allied units but cannot stop on them
-    /// - Cannot traverse elevation differences greater than unit's Jump stat
-    /// - Forest costs 2 movement points, all other walkable terrain costs 1
+    /// - Cannot traverse elevation differences greater than JumpHeight (unless IgnoreHeight)
+    /// - Forest costs 2 movement points (unless CanFly)
     /// </summary>
     public static class Pathfinder
     {
@@ -46,13 +46,39 @@ namespace IsoRPG.Battle
         /// <param name="map">The battle map data.</param>
         /// <param name="unit">The unit to calculate movement for.</param>
         /// <param name="allUnits">All units on the battlefield (for collision).</param>
-        /// <returns>Dictionary of reachable positions to their path nodes. Only includes tiles the unit can stop on.</returns>
-        public static Dictionary<Vector2Int, PathNode> GetReachableTiles(
+        /// <returns>PathfindingResult with stoppable tiles and full visited set.</returns>
+        public static PathfindingResult GetReachableTiles(
             BattleMapData map, UnitInstance unit, List<UnitInstance> allUnits)
         {
-            var start = unit.GridPosition;
-            var moveRange = unit.Stats.Move;
-            var jumpHeight = unit.Stats.Jump;
+            return GetReachableTiles(map, unit.GridPosition, MovementParams.FromUnit(unit),
+                unit.Team, allUnits);
+        }
+
+        /// <summary>
+        /// Calculate all tiles reachable with explicit movement parameters.
+        /// Use this overload to apply movement ability modifiers (Move+1, Ignore Height, etc.).
+        /// </summary>
+        /// <param name="map">The battle map data.</param>
+        /// <param name="start">Starting grid position.</param>
+        /// <param name="moveParams">Movement parameters (potentially modified by abilities).</param>
+        /// <param name="unitTeam">Team of the moving unit (for collision rules).</param>
+        /// <param name="allUnits">All units on the battlefield.</param>
+        /// <returns>PathfindingResult with stoppable tiles and full visited set.</returns>
+        public static PathfindingResult GetReachableTiles(
+            BattleMapData map, Vector2Int start, MovementParams moveParams,
+            int unitTeam, List<UnitInstance> allUnits)
+        {
+            // Pre-build position sets for O(1) collision checks
+            var enemyPositions = new HashSet<Vector2Int>();
+            var allyPositions = new HashSet<Vector2Int>();
+            foreach (var u in allUnits)
+            {
+                if (!u.IsAlive || u.GridPosition == start) continue;
+                if (u.Team != unitTeam)
+                    enemyPositions.Add(u.GridPosition);
+                else
+                    allyPositions.Add(u.GridPosition);
+            }
 
             var visited = new Dictionary<Vector2Int, PathNode>();
             var frontier = new PriorityQueue<Vector2Int, int>();
@@ -66,6 +92,13 @@ namespace IsoRPG.Battle
             };
             visited[start] = startNode;
             frontier.Enqueue(start, 0);
+
+            // Teleport: all tiles in Manhattan range are reachable, ignore obstacles
+            if (moveParams.CanTeleport)
+            {
+                return GetTeleportReachable(map, start, moveParams.MoveRange,
+                    enemyPositions, allyPositions);
+            }
 
             while (frontier.Count > 0)
             {
@@ -83,26 +116,28 @@ namespace IsoRPG.Battle
                         continue;
 
                     // Elevation check
-                    if (!map.TryGetTile(current, out var currentTile))
+                    if (!moveParams.IgnoreHeight)
+                    {
+                        if (!map.TryGetTile(current, out var currentTile))
+                            continue;
+
+                        if (Mathf.Abs(nextTile.Elevation - currentTile.Elevation) > moveParams.JumpHeight)
+                            continue;
+                    }
+
+                    // Enemy collision — cannot enter enemy tiles
+                    if (enemyPositions.Contains(next))
                         continue;
 
-                    if (Mathf.Abs(nextTile.Elevation - currentTile.Elevation) > jumpHeight)
-                        continue;
-
-                    // Enemy collision — cannot enter enemy tiles at all
-                    var occupant = allUnits.FirstOrDefault(u =>
-                        u.GridPosition == next && u.IsAlive && u != unit);
-                    if (occupant != null && occupant.Team != unit.Team)
-                        continue;
-
-                    int newCost = currentNode.CostSoFar + nextTile.MoveCost;
-                    if (newCost > moveRange)
+                    // Movement cost
+                    int tileCost = moveParams.CanFly ? 1 : nextTile.MoveCost;
+                    int newCost = currentNode.CostSoFar + tileCost;
+                    if (newCost > moveParams.MoveRange)
                         continue;
 
                     if (!visited.ContainsKey(next) || visited[next].CostSoFar > newCost)
                     {
-                        // Allied occupant: can traverse but not stop
-                        bool canStop = occupant == null;
+                        bool canStop = !allyPositions.Contains(next);
 
                         var node = new PathNode
                         {
@@ -124,10 +159,6 @@ namespace IsoRPG.Battle
         /// Reconstruct the path from start to target.
         /// Uses the full visited set (including non-stoppable ally tiles) for reconstruction.
         /// </summary>
-        /// <param name="result">Pathfinding result from GetReachableTiles.</param>
-        /// <param name="start">Starting grid position.</param>
-        /// <param name="target">Target grid position (must be in StoppableTiles).</param>
-        /// <returns>Ordered list of positions from start (exclusive) to target (inclusive), or null if unreachable.</returns>
         public static List<Vector2Int> ReconstructPath(
             PathfindingResult result, Vector2Int start, Vector2Int target)
         {
@@ -135,7 +166,7 @@ namespace IsoRPG.Battle
         }
 
         /// <summary>
-        /// Reconstruct path from a raw visited dictionary. Prefer the PathfindingResult overload.
+        /// Reconstruct path from a raw visited dictionary.
         /// </summary>
         public static List<Vector2Int> ReconstructPath(
             Dictionary<Vector2Int, PathNode> visited, Vector2Int start, Vector2Int target)
@@ -155,12 +186,56 @@ namespace IsoRPG.Battle
 
             if (safety <= 0)
             {
-                Debug.LogError("[Pathfinder] Path reconstruction safety limit reached — possible cycle.");
+                Debug.LogError("[Pathfinder] Path reconstruction safety limit reached.");
                 return null;
             }
 
             path.Reverse();
             return path;
+        }
+
+        private static PathfindingResult GetTeleportReachable(
+            BattleMapData map, Vector2Int start, int range,
+            HashSet<Vector2Int> enemyPositions, HashSet<Vector2Int> allyPositions)
+        {
+            var visited = new Dictionary<Vector2Int, PathNode>();
+
+            for (int y = 0; y < map.Height; y++)
+            {
+                for (int x = 0; x < map.Width; x++)
+                {
+                    var pos = new Vector2Int(x, y);
+                    if (IsoMath.ManhattanDistance(start, pos) > range)
+                        continue;
+
+                    if (!map.TryGetTile(pos, out var tile) || !tile.Walkable)
+                        continue;
+
+                    if (enemyPositions.Contains(pos))
+                        continue;
+
+                    bool canStop = !allyPositions.Contains(pos);
+
+                    visited[pos] = new PathNode
+                    {
+                        Position = pos,
+                        CostSoFar = IsoMath.ManhattanDistance(start, pos),
+                        CameFrom = start, // teleport: direct from start
+                        CanStop = canStop
+                    };
+                }
+            }
+
+            // Ensure start is in visited
+            visited[start] = new PathNode
+            {
+                Position = start,
+                CostSoFar = 0,
+                CameFrom = start,
+                CanStop = true
+            };
+
+            return new PathfindingResult(visited);
         }
     }
 

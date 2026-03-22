@@ -19,7 +19,9 @@ namespace IsoRPG.Map
         /// <summary>Targetable by ability — red tint.</summary>
         AttackRange,
         /// <summary>Hazardous tile — pulsing orange/red.</summary>
-        HazardWarning
+        HazardWarning,
+        /// <summary>Path preview — bright blue trail showing planned movement path.</summary>
+        PathPreview
     }
 
     /// <summary>
@@ -85,6 +87,7 @@ namespace IsoRPG.Map
                 TileVisualState.MoveRange => new Color(0.4f, 0.6f, 1f, 0.7f),
                 TileVisualState.AttackRange => new Color(1f, 0.3f, 0.3f, 0.7f),
                 TileVisualState.HazardWarning => new Color(1f, 0.5f, 0.1f, 0.8f),
+                TileVisualState.PathPreview => new Color(0.3f, 0.7f, 1f, 0.9f),
                 _ => _baseColor,
             };
         }
