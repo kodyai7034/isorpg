@@ -5,7 +5,8 @@
         "IsoRPG.Core",
         "IsoRPG.Battle",
         "IsoRPG.Units",
-        "IsoRPG.Map"
+        "IsoRPG.Map",
+        "IsoRPG.Data"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
