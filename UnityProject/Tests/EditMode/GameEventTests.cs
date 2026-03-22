@@ -45,13 +45,33 @@ namespace IsoRPG.Tests
         {
             var evt = new GameEvent<int>();
             int count = 0;
-            evt.Subscribe(_ => count++);
-            evt.Subscribe(_ => count++);
-            evt.Subscribe(_ => count++);
+            // Use distinct lambdas (each is a unique delegate instance)
+            System.Action<int> a = _ => count++;
+            System.Action<int> b = _ => count++;
+            System.Action<int> c = _ => count++;
+            evt.Subscribe(a);
+            evt.Subscribe(b);
+            evt.Subscribe(c);
 
             evt.Raise(1);
 
             Assert.AreEqual(3, count);
+        }
+
+        [Test]
+        public void DuplicateSubscribe_Rejected()
+        {
+            var evt = new GameEvent<int>();
+            int count = 0;
+            void Handler(int _) => count++;
+
+            evt.Subscribe(Handler);
+            evt.Subscribe(Handler); // duplicate — should be ignored
+
+            evt.Raise(1);
+
+            Assert.AreEqual(1, count);
+            Assert.AreEqual(1, evt.ListenerCount);
         }
 
         [Test]

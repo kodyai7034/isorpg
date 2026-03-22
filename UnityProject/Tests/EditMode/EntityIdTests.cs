@@ -29,7 +29,7 @@ namespace IsoRPG.Tests
         public void Equality_SameId_AreEqual()
         {
             var id = EntityId.New();
-            var copy = new EntityId(id.GuidString);
+            var copy = new EntityId(id.ToGuid());
             Assert.AreEqual(id, copy);
             Assert.IsTrue(id == copy);
             Assert.IsFalse(id != copy);
@@ -55,7 +55,7 @@ namespace IsoRPG.Tests
         public void GetHashCode_SameId_SameHash()
         {
             var id = EntityId.New();
-            var copy = new EntityId(id.GuidString);
+            var copy = new EntityId(id.ToGuid());
             Assert.AreEqual(id.GetHashCode(), copy.GetHashCode());
         }
 

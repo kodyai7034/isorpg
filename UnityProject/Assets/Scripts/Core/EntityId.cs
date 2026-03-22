@@ -6,23 +6,33 @@ namespace IsoRPG.Core
     /// Globally unique identifier for game entities (units, status effects, etc.).
     /// Wraps <see cref="System.Guid"/> with value semantics and a null sentinel.
     /// Survives serialization, deserialization, and scene reloads.
+    ///
+    /// Uses 16-byte Guid comparison — faster than string-based alternatives.
     /// </summary>
     [Serializable]
     public readonly struct EntityId : IEquatable<EntityId>
     {
-        /// <summary>The underlying GUID value.</summary>
-        public readonly string GuidString;
+        // Stored as 2 longs for Unity serialization compatibility (Guid is not serializable by JsonUtility)
+        private readonly long _a;
+        private readonly long _b;
 
         /// <summary>Sentinel value representing no entity. Use instead of default.</summary>
-        public static readonly EntityId None = new(Guid.Empty.ToString());
+        public static readonly EntityId None = default;
+
+        private EntityId(long a, long b)
+        {
+            _a = a;
+            _b = b;
+        }
 
         /// <summary>
-        /// Create an EntityId from an existing GUID string.
+        /// Create an EntityId from an existing GUID.
         /// </summary>
-        /// <param name="guidString">A valid GUID string representation.</param>
-        public EntityId(string guidString)
+        public EntityId(Guid guid)
         {
-            GuidString = guidString ?? Guid.Empty.ToString();
+            var bytes = guid.ToByteArray();
+            _a = BitConverter.ToInt64(bytes, 0);
+            _b = BitConverter.ToInt64(bytes, 8);
         }
 
         /// <summary>
@@ -30,17 +40,28 @@ namespace IsoRPG.Core
         /// </summary>
         public static EntityId New()
         {
-            return new EntityId(Guid.NewGuid().ToString());
+            return new EntityId(Guid.NewGuid());
         }
 
         /// <summary>
-        /// Whether this EntityId represents a valid entity (not None).
+        /// Whether this EntityId represents a valid entity (not None/default).
         /// </summary>
-        public bool IsValid => GuidString != null && GuidString != Guid.Empty.ToString();
+        public bool IsValid => _a != 0 || _b != 0;
+
+        /// <summary>
+        /// Convert back to System.Guid.
+        /// </summary>
+        public Guid ToGuid()
+        {
+            var bytes = new byte[16];
+            BitConverter.GetBytes(_a).CopyTo(bytes, 0);
+            BitConverter.GetBytes(_b).CopyTo(bytes, 8);
+            return new Guid(bytes);
+        }
 
         public bool Equals(EntityId other)
         {
-            return string.Equals(GuidString, other.GuidString, StringComparison.Ordinal);
+            return _a == other._a && _b == other._b;
         }
 
         public override bool Equals(object obj)
@@ -50,12 +71,15 @@ namespace IsoRPG.Core
 
         public override int GetHashCode()
         {
-            return GuidString != null ? GuidString.GetHashCode() : 0;
+            unchecked
+            {
+                return (_a.GetHashCode() * 397) ^ _b.GetHashCode();
+            }
         }
 
         public override string ToString()
         {
-            return IsValid ? GuidString[..8] : "None";
+            return IsValid ? ToGuid().ToString()[..8] : "None";
         }
 
         public static bool operator ==(EntityId left, EntityId right) => left.Equals(right);

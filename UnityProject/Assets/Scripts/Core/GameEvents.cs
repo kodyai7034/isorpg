@@ -59,5 +59,25 @@ namespace IsoRPG.Core
 
         /// <summary>Raised after any command is undone.</summary>
         public static readonly GameEvent<ICommand> CommandUndone = new();
+
+        /// <summary>
+        /// Clear all event subscribers. Call during scene teardown to prevent
+        /// stale listener references surviving scene transitions.
+        /// </summary>
+        public static void ClearAll()
+        {
+            BattleStarted.Clear();
+            BattleEnded.Clear();
+            TurnStarted.Clear();
+            TurnEnded.Clear();
+            UnitMoved.Clear();
+            DamageDealt.Clear();
+            HealingDealt.Clear();
+            UnitDied.Clear();
+            AbilityUsed.Clear();
+            StatusApplied.Clear();
+            CommandExecuted.Clear();
+            CommandUndone.Clear();
+        }
     }
 }

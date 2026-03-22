@@ -1,10 +1,13 @@
-using UnityEngine;
+using System;
 
 namespace IsoRPG.Core
 {
     /// <summary>
-    /// Deterministic RNG backed by <see cref="System.Random"/>.
-    /// Supports seed capture and restoration for rewind/replay.
+    /// Deterministic RNG using xorshift128 algorithm.
+    /// Full internal state is capturable and restorable for rewind/replay.
+    ///
+    /// Unlike System.Random, the internal state is fully exposed via Seed,
+    /// and SetSeed guarantees identical sequences when replayed.
     ///
     /// Usage:
     /// <code>
@@ -17,15 +20,15 @@ namespace IsoRPG.Core
     /// </summary>
     public class GameRng : IGameRng
     {
-        private System.Random _random;
+        private uint _state;
 
         /// <inheritdoc/>
-        public int Seed { get; private set; }
+        public int Seed => (int)_state;
 
         /// <summary>
         /// Create a new RNG with the given seed.
         /// </summary>
-        /// <param name="seed">Initial seed. Use <see cref="System.Environment.TickCount"/> for non-deterministic.</param>
+        /// <param name="seed">Initial seed. Must not be 0 (will be coerced to 1).</param>
         public GameRng(int seed)
         {
             SetSeed(seed);
@@ -34,15 +37,15 @@ namespace IsoRPG.Core
         /// <summary>
         /// Create a new RNG with a time-based seed (non-deterministic).
         /// </summary>
-        public GameRng() : this(System.Environment.TickCount)
+        public GameRng() : this(Environment.TickCount)
         {
         }
 
         /// <inheritdoc/>
         public void SetSeed(int seed)
         {
-            Seed = seed;
-            _random = new System.Random(seed);
+            // Xorshift requires non-zero state
+            _state = seed == 0 ? 1u : (uint)seed;
         }
 
         /// <inheritdoc/>
@@ -51,27 +54,37 @@ namespace IsoRPG.Core
             if (min >= max)
                 return min;
 
-            int result = _random.Next(min, max);
-            // Advance seed tracking: we can't read System.Random's internal state,
-            // so we track by generating a new seed from the current sequence.
-            Seed = _random.Next();
-            return result;
+            uint raw = NextUint();
+            return min + (int)(raw % (uint)(max - min));
         }
 
         /// <inheritdoc/>
         public float Value()
         {
-            float result = (float)_random.NextDouble();
-            Seed = _random.Next();
-            return result;
+            uint raw = NextUint();
+            return (raw & 0x7FFFFFu) / (float)0x800000u; // 23-bit mantissa → [0, 1)
         }
 
         /// <inheritdoc/>
         public bool Check(int chancePercent)
         {
-            int clamped = Mathf.Clamp(chancePercent, GameConstants.MinHitChance, GameConstants.MaxHitChance);
+            int clamped = Math.Clamp(chancePercent, GameConstants.MinHitChance, GameConstants.MaxHitChance);
             int roll = Range(0, 100);
             return roll < clamped;
+        }
+
+        /// <summary>
+        /// Xorshift32 — fast, minimal-state PRNG with full state extractability.
+        /// Period: 2^32 - 1.
+        /// </summary>
+        private uint NextUint()
+        {
+            uint x = _state;
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            _state = x;
+            return x;
         }
     }
 }

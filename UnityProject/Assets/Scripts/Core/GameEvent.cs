@@ -1,17 +1,18 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace IsoRPG.Core
 {
     /// <summary>
     /// Type-safe event channel for decoupled communication between systems.
-    /// Subscribe from any system, raise from any system. No allocation on raise if no listeners.
+    /// Subscribe from any system, raise from any system.
+    ///
+    /// Uses a List-backed listener store instead of multicast delegates
+    /// to avoid allocation on Raise and maintain accurate listener count.
     ///
     /// Usage:
     /// <code>
-    /// // Define in GameEvents:
-    /// public static readonly GameEvent&lt;DamageDealtArgs&gt; DamageDealt = new();
-    ///
     /// // Subscribe:
     /// GameEvents.DamageDealt.Subscribe(OnDamageDealt);
     ///
@@ -25,23 +26,21 @@ namespace IsoRPG.Core
     /// <typeparam name="T">Event argument type. Should be a readonly struct.</typeparam>
     public class GameEvent<T>
     {
-        private event Action<T> _listeners;
+        private readonly List<Action<T>> _listeners = new();
 
         /// <summary>Number of active subscribers.</summary>
-        public int ListenerCount { get; private set; }
+        public int ListenerCount => _listeners.Count;
 
         /// <summary>
-        /// Subscribe a listener. Safe to call multiple times — duplicates are allowed
-        /// (standard C# delegate behavior).
+        /// Subscribe a listener. Duplicate subscriptions are rejected.
         /// </summary>
         /// <param name="listener">Callback to invoke when event is raised.</param>
         public void Subscribe(Action<T> listener)
         {
-            if (listener == null)
+            if (listener == null || _listeners.Contains(listener))
                 return;
 
-            _listeners += listener;
-            ListenerCount++;
+            _listeners.Add(listener);
         }
 
         /// <summary>
@@ -54,25 +53,24 @@ namespace IsoRPG.Core
             if (listener == null)
                 return;
 
-            _listeners -= listener;
-            ListenerCount = Mathf.Max(0, ListenerCount - 1);
+            _listeners.Remove(listener);
         }
 
         /// <summary>
         /// Raise the event, invoking all subscribers. Catches and logs exceptions
         /// from individual listeners to prevent one bad listener from breaking others.
+        /// Zero allocation when no listeners. No allocation during iteration.
         /// </summary>
         /// <param name="args">Event arguments.</param>
         public void Raise(T args)
         {
-            if (_listeners == null)
-                return;
-
-            foreach (var listener in _listeners.GetInvocationList())
+            // Iterate by index to avoid List enumerator allocation
+            // and to safely handle subscribers that unsubscribe during Raise
+            for (int i = _listeners.Count - 1; i >= 0; i--)
             {
                 try
                 {
-                    ((Action<T>)listener).Invoke(args);
+                    _listeners[i].Invoke(args);
                 }
                 catch (Exception ex)
                 {
@@ -84,8 +82,7 @@ namespace IsoRPG.Core
         /// <summary>Remove all subscribers. Use with caution — typically only for teardown.</summary>
         public void Clear()
         {
-            _listeners = null;
-            ListenerCount = 0;
+            _listeners.Clear();
         }
     }
 
@@ -94,20 +91,19 @@ namespace IsoRPG.Core
     /// </summary>
     public class GameEvent
     {
-        private event Action _listeners;
+        private readonly List<Action> _listeners = new();
 
         /// <summary>Number of active subscribers.</summary>
-        public int ListenerCount { get; private set; }
+        public int ListenerCount => _listeners.Count;
 
-        /// <summary>Subscribe a listener.</summary>
+        /// <summary>Subscribe a listener. Duplicate subscriptions are rejected.</summary>
         /// <param name="listener">Callback to invoke when event is raised.</param>
         public void Subscribe(Action listener)
         {
-            if (listener == null)
+            if (listener == null || _listeners.Contains(listener))
                 return;
 
-            _listeners += listener;
-            ListenerCount++;
+            _listeners.Add(listener);
         }
 
         /// <summary>Unsubscribe a listener.</summary>
@@ -117,8 +113,7 @@ namespace IsoRPG.Core
             if (listener == null)
                 return;
 
-            _listeners -= listener;
-            ListenerCount = Mathf.Max(0, ListenerCount - 1);
+            _listeners.Remove(listener);
         }
 
         /// <summary>
@@ -126,14 +121,11 @@ namespace IsoRPG.Core
         /// </summary>
         public void Raise()
         {
-            if (_listeners == null)
-                return;
-
-            foreach (var listener in _listeners.GetInvocationList())
+            for (int i = _listeners.Count - 1; i >= 0; i--)
             {
                 try
                 {
-                    ((Action)listener).Invoke();
+                    _listeners[i].Invoke();
                 }
                 catch (Exception ex)
                 {
@@ -145,8 +137,7 @@ namespace IsoRPG.Core
         /// <summary>Remove all subscribers.</summary>
         public void Clear()
         {
-            _listeners = null;
-            ListenerCount = 0;
+            _listeners.Clear();
         }
     }
 }
