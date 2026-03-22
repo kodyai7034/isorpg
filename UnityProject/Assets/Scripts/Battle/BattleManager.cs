@@ -15,6 +15,8 @@ namespace IsoRPG.Battle
     /// This is the ONLY MonoBehaviour that owns game logic references.
     /// All other MonoBehaviours (UnitView, TileView, etc.) are view-only.
     /// </summary>
+    /// Execution order -100 ensures ClearAll runs before UI components subscribe in their Awake.
+    [DefaultExecutionOrder(-100)]
     public class BattleManager : MonoBehaviour
     {
         [Header("References")]
@@ -31,10 +33,14 @@ namespace IsoRPG.Battle
         private BattleContext _context;
         private StateMachine<BattleContext> _stateMachine;
 
+        private void Awake()
+        {
+            // Clear stale listeners from previous scene BEFORE any other Awake subscribes
+            GameEvents.ClearAll();
+        }
+
         private void Start()
         {
-            // Clear any stale event listeners from previous scene
-            GameEvents.ClearAll();
 
             // Load map
             var map = mapOverride != null ? mapOverride : MapGenerator.CreateTestMap();
