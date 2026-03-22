@@ -43,14 +43,81 @@ UI, camera, audio, and VFX subscribe to events — they never poll game state.
 ### Input Abstraction
 Player input, AI decisions, and network commands all produce the same `ICommand` objects. The battle system does not know or care where commands come from.
 
-### UI-Driven Player Input (No Keyboard Bindings)
-All player actions are driven through **on-screen UI menus and mouse clicks** — never raw keyboard shortcuts. The player interacts exclusively through:
-- **Clickable action menu** (Move, Act, Wait, Undo buttons)
-- **Clickable ability menu** (list of abilities with MP costs)
-- **Mouse clicks on tiles** (select movement destination, select attack target)
-- **Mouse hover** for tooltips, path preview, and unit info
+### Input Model (Mouse-Primary + Keyboard Navigation)
 
-No gameplay actions are bound to keyboard keys. Keyboard shortcuts are only for non-gameplay functions (camera pan with WASD, zoom with scroll). The game must be fully playable with mouse alone. Battle states must NEVER use `Input.GetKeyDown` for gameplay actions — all gameplay input flows through UI button events via GameEvents.
+The game is **mouse-primary** — all gameplay actions are accessible via on-screen UI and mouse clicks. Keyboard provides **navigation and camera control** as a complement, not a replacement.
+
+**Mouse (primary input):**
+- **Click menu buttons** — Move, Act, Wait, Undo, ability selection, cancel
+- **Click tiles** — select movement destination, select attack target
+- **Right-click** — cancel / go back
+- **Hover** — tooltips, path preview, unit info
+- **Scroll wheel** — camera zoom
+
+**Keyboard (navigation + camera):**
+- **Arrow keys** — navigate between menu buttons (highlight moves between options)
+- **Enter/Space** — confirm highlighted menu option
+- **Escape** — cancel / go back (same as right-click)
+- **WASD** — pan camera
+- **Q / E** — rotate map 90° CW / CCW
+- **Scroll wheel** — camera zoom
+
+**Design rules:**
+- The game must be fully playable with mouse alone
+- The game must be fully navigable with keyboard alone (arrow keys + Enter + Escape)
+- Battle states must NOT use `Input.GetKeyDown` for direct action triggers — all gameplay input flows through UI events via GameEvents
+- Menu keyboard navigation is handled by Unity's EventSystem + UI Navigation (built-in), not custom key polling
+- Camera controls (WASD, Q/E, scroll) are the only direct `Input` reads allowed, and only in `BattleCameraController`
+
+### UI Polish & Feedback (Juice)
+
+Menus are the primary interface in a tactics RPG — they must feel buttery smooth with constant feedback. Every player interaction gets at least two forms of feedback (audio + visual).
+
+**Audio Feedback (required on every interaction):**
+- Menu cursor move / hover → soft tick/click
+- Button confirm / select → satisfying "accept" chime
+- Cancel / back → soft "whoosh" or lower-pitched click
+- Invalid action (greyed out button) → dull buzz/thud
+- Hover over enemy unit → tension note
+- Hover over ally unit → warm tone
+- Undo → reverse "swoosh"
+- Turn start → brief announcement chime
+- Victory → fanfare
+- Defeat → somber tone
+
+**Visual Feedback (required on every interaction):**
+- Button hover → scale up slightly (1.05x) with ease-in-out tween
+- Button press → quick scale down (0.95x) then bounce back
+- Selected/active button → glowing border pulse or highlight sweep
+- Greyed-out buttons → desaturated + 50% transparency
+- Menu appear → slide in from edge with easing (never instant pop)
+- Menu disappear → slide out or fade (never instant vanish)
+- Turn start → unit portrait slides in, name banner animates across screen
+- Damage numbers → punch scale (start 2x big, shrink to 1x) + screen shake on crits
+- Healing numbers → gentle float up with green glow
+
+**Tile/Cursor Feedback:**
+- Tile hover → subtle bounce or glow pulse
+- Movement range tiles → gentle pulsing opacity (breathing effect)
+- Attack range tiles → sharper red pulse
+- Path preview → tiles light up sequentially in a cascade
+- Valid target hover → enemy highlight + damage preview tooltip appears
+- Invalid target → cursor tint red or X indicator
+
+**Transition Feedback:**
+- Turn transition → "whoosh" + banner showing unit name + team color
+- AI thinking → animated ellipsis or thinking indicator
+- Victory → screen flash + particle burst + fanfare
+- Defeat → screen darken + somber tone + slow fade
+
+**AI-Generated Menu Art (via Gemini):**
+- Menu panel backgrounds (ornate fantasy borders, parchment/stone textures)
+- Button art (4 states per button: normal, hover, pressed, disabled)
+- Unit portrait frames (team-colored ornate borders)
+- Turn banner background (scrollwork or flag motif)
+- Ability icons (one unique icon per ability)
+- Status effect icons (one per status type)
+- All art must be consistent pixel art style matching the game's aesthetic
 
 ### Defensive & Robust Code
 - Validate at system boundaries — never trust external input.

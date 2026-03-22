@@ -4,9 +4,9 @@ using IsoRPG.Core;
 namespace IsoRPG.Battle.States
 {
     /// <summary>
-    /// Player chooses an action: Move, Act, Wait, or Undo.
-    /// Communicates with UI via GameEvents (no direct UI references).
-    /// Also supports keyboard shortcuts as fallback.
+    /// Player chooses an action via on-screen UI menu.
+    /// No keyboard input — all actions flow through GameEvents from ActionMenuUI.
+    /// Execute is empty; all transitions are event-driven.
     /// </summary>
     public class SelectActionState : IState<BattleContext>
     {
@@ -20,49 +20,32 @@ namespace IsoRPG.Battle.States
             _machine = machine;
             _actionTaken = false;
 
-            // Request UI to show action menu via event
+            // Show action menu via event
             GameEvents.ShowActionMenu.Raise(new ActionMenuRequestArgs(
                 canMove: !ctx.ActiveUnitMoved,
                 canAct: !ctx.ActiveUnitActed,
                 canUndo: ctx.TurnCommandCount > 0));
 
-            // Subscribe to UI response events
+            // Subscribe to UI button events
             GameEvents.ActionMoveSelected.Subscribe(OnMoveSelected);
             GameEvents.ActionActSelected.Subscribe(OnActSelected);
             GameEvents.ActionWaitSelected.Subscribe(OnWaitSelected);
             GameEvents.ActionUndoSelected.Subscribe(OnUndoSelected);
 
-            Debug.Log($"[Select] {ctx.ActiveUnit.Name}: " +
-                (!ctx.ActiveUnitMoved ? "[M]ove " : "") +
-                (!ctx.ActiveUnitActed ? "[A]ct " : "") +
-                "[W]ait " +
-                (ctx.TurnCommandCount > 0 ? "[U]ndo " : ""));
+            Debug.Log($"[Select] {ctx.ActiveUnit.Name}: waiting for menu input...");
         }
 
         public void Execute(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
-            if (_actionTaken) return;
-
-            // Keyboard shortcuts (retained alongside UI)
-            if (!ctx.ActiveUnitMoved && Input.GetKeyDown(KeyCode.M))
-                OnMoveSelected();
-            else if (!ctx.ActiveUnitActed && Input.GetKeyDown(KeyCode.A))
-                OnActSelected();
-            else if (Input.GetKeyDown(KeyCode.W))
-                OnWaitSelected();
-            else if (ctx.TurnCommandCount > 0 && Input.GetKeyDown(KeyCode.U))
-                OnUndoSelected();
+            // Empty — all input is event-driven from UI buttons
         }
 
         public void Exit(BattleContext ctx)
         {
-            // Unsubscribe from UI events
             GameEvents.ActionMoveSelected.Unsubscribe(OnMoveSelected);
             GameEvents.ActionActSelected.Unsubscribe(OnActSelected);
             GameEvents.ActionWaitSelected.Unsubscribe(OnWaitSelected);
             GameEvents.ActionUndoSelected.Unsubscribe(OnUndoSelected);
-
-            // Request UI to hide
             GameEvents.HideActionMenu.Raise();
         }
 
@@ -84,7 +67,6 @@ namespace IsoRPG.Battle.States
         {
             if (_actionTaken) return;
             _actionTaken = true;
-
             var waitCmd = new WaitCommand(_ctx.ActiveUnit, _ctx.Rng?.Seed ?? 0);
             _ctx.CommandHistory.ExecuteCommand(waitCmd);
             _ctx.TurnCommandCount++;
@@ -95,20 +77,13 @@ namespace IsoRPG.Battle.States
         {
             if (_actionTaken || _ctx.TurnCommandCount <= 0) return;
             _actionTaken = true;
-
             var undone = _ctx.CommandHistory.Undo();
             _ctx.TurnCommandCount--;
-
             switch (undone)
             {
-                case MoveCommand:
-                    _ctx.ActiveUnitMoved = false;
-                    break;
-                case AttackCommand:
-                    _ctx.ActiveUnitActed = false;
-                    break;
+                case MoveCommand: _ctx.ActiveUnitMoved = false; break;
+                case AttackCommand: _ctx.ActiveUnitActed = false; break;
             }
-
             Debug.Log($"[Undo] Reverted: {undone?.Description}");
             _machine.ChangeState(new SelectActionState());
         }

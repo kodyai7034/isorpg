@@ -7,7 +7,7 @@ namespace IsoRPG.Battle.States
 {
     /// <summary>
     /// Player selects a target for the chosen ability.
-    /// Shows ability range overlay (red tiles). Click to confirm, Escape to cancel.
+    /// Shows ability range overlay (red tiles). Left-click to confirm, right-click to cancel. No keyboard.
     /// </summary>
     public class ActionTargetState : IState<BattleContext>
     {
@@ -35,7 +35,7 @@ namespace IsoRPG.Battle.States
         public void Execute(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
             // Cancel
-            if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape))
+            if (Input.GetMouseButtonDown(1))
             {
                 ctx.Grid.ClearAllOverlays();
                 machine.ChangeState(new SelectAbilityState());

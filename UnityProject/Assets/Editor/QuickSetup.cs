@@ -95,6 +95,14 @@ public static class QuickSetup
             Debug.Log("[QuickSetup] BattleManager created");
         }
 
+        // --- UI ---
+        CreateBattleUI();
+
+        // --- SFX Manager ---
+        var sfxObj = new GameObject("SFXManager");
+        sfxObj.AddComponent<AudioSource>();
+        AddComponentByName(sfxObj, "IsoRPG.UI.SFXManager");
+
         // Save scene
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Battle.unity");
 
@@ -103,15 +111,289 @@ public static class QuickSetup
         EditorUtility.DisplayDialog("IsoRPG - Ready!",
             "Battle scene created!\n\n" +
             "Press PLAY to start.\n\n" +
-            "Controls:\n" +
-            "  M = Move\n" +
-            "  A = Act (then 1-4 to pick ability)\n" +
-            "  W = Wait (end turn)\n" +
-            "  U = Undo\n" +
-            "  Esc = Cancel\n" +
-            "  WASD = Pan camera\n" +
-            "  Scroll = Zoom",
+            "All actions via mouse:\n" +
+            "  Click menu buttons to Move/Act/Wait/Undo\n" +
+            "  Click tiles to select destinations/targets\n" +
+            "  Right-click to cancel\n\n" +
+            "Camera: WASD pan, Scroll zoom, Q/E rotate",
             "Play!");
+    }
+
+    // --- UI Creation ---
+
+    static void CreateBattleUI()
+    {
+        // EventSystem (required for UI interaction)
+        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+        {
+            var esObj = new GameObject("EventSystem");
+            esObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            esObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+        }
+
+        // Canvas
+        var canvasObj = new GameObject("BattleCanvas");
+        var canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 100;
+        var scaler = canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
+        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+
+        // UIManager
+        AddComponentByName(canvasObj, "IsoRPG.UI.UIManager");
+
+        // --- Action Menu ---
+        var actionMenu = CreateActionMenuUI(canvasObj.transform);
+
+        // --- Ability Menu ---
+        var abilityMenu = CreateAbilityMenuUI(canvasObj.transform);
+
+        // --- Turn Banner ---
+        CreateTurnBanner(canvasObj.transform);
+
+        // Wire UIManager references via SerializedObject
+        var uiMgr = canvasObj.GetComponent(FindType("IsoRPG.UI.UIManager"));
+        if (uiMgr != null)
+        {
+            var so = new SerializedObject(uiMgr);
+            SetRef(so, "ActionMenu", actionMenu.GetComponent(FindType("IsoRPG.UI.ActionMenuUI")));
+            SetRef(so, "AbilityMenu", abilityMenu.GetComponent(FindType("IsoRPG.UI.AbilityMenuUI")));
+            so.ApplyModifiedProperties();
+        }
+
+        Debug.Log("[QuickSetup] UI created: ActionMenu, AbilityMenu, TurnBanner, EventSystem");
+    }
+
+    static GameObject CreateActionMenuUI(Transform parent)
+    {
+        // Panel
+        var panel = new GameObject("ActionMenu");
+        panel.transform.SetParent(parent, false);
+        var panelRect = panel.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(1, 0);
+        panelRect.anchorMax = new Vector2(1, 0);
+        panelRect.pivot = new Vector2(1, 0);
+        panelRect.anchoredPosition = new Vector2(-20, 20);
+        panelRect.sizeDelta = new Vector2(180, 220);
+
+        var panelImg = panel.AddComponent<UnityEngine.UI.Image>();
+        panelImg.color = new Color(0.08f, 0.08f, 0.12f, 0.92f);
+
+        var layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+        layout.padding = new RectOffset(10, 10, 10, 10);
+        layout.spacing = 8;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childAlignment = TextAnchor.UpperCenter;
+
+        // Buttons
+        var moveBtn = MakeMenuButton("Move", panel.transform, new Color(0.2f, 0.45f, 0.75f));
+        var actBtn = MakeMenuButton("Act", panel.transform, new Color(0.75f, 0.25f, 0.25f));
+        var waitBtn = MakeMenuButton("Wait", panel.transform, new Color(0.45f, 0.45f, 0.45f));
+        var undoBtn = MakeMenuButton("Undo", panel.transform, new Color(0.7f, 0.6f, 0.2f));
+
+        // Wire navigation (arrow keys): Move↔Act↔Wait↔Undo vertical
+        SetButtonNavigation(moveBtn, null, actBtn);
+        SetButtonNavigation(actBtn, moveBtn, waitBtn);
+        SetButtonNavigation(waitBtn, actBtn, undoBtn);
+        SetButtonNavigation(undoBtn, waitBtn, null);
+
+        // Add ActionMenuUI component
+        var actionMenuComp = AddComponentByName(panel, "IsoRPG.UI.ActionMenuUI");
+        if (actionMenuComp != null)
+        {
+            var so = new SerializedObject(actionMenuComp);
+            SetRef(so, "moveButton", moveBtn.GetComponent<UnityEngine.UI.Button>());
+            SetRef(so, "actButton", actBtn.GetComponent<UnityEngine.UI.Button>());
+            SetRef(so, "waitButton", waitBtn.GetComponent<UnityEngine.UI.Button>());
+            SetRef(so, "undoButton", undoBtn.GetComponent<UnityEngine.UI.Button>());
+            so.ApplyModifiedProperties();
+        }
+
+        // Set first selected for EventSystem keyboard nav
+        var es = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+        if (es != null)
+            es.firstSelectedGameObject = moveBtn;
+
+        return panel;
+    }
+
+    static GameObject CreateAbilityMenuUI(Transform parent)
+    {
+        var panel = new GameObject("AbilityMenu");
+        panel.transform.SetParent(parent, false);
+        var panelRect = panel.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(1, 0);
+        panelRect.anchorMax = new Vector2(1, 0);
+        panelRect.pivot = new Vector2(1, 0);
+        panelRect.anchoredPosition = new Vector2(-20, 20);
+        panelRect.sizeDelta = new Vector2(220, 280);
+
+        var panelImg = panel.AddComponent<UnityEngine.UI.Image>();
+        panelImg.color = new Color(0.08f, 0.08f, 0.12f, 0.92f);
+
+        var layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+        layout.padding = new RectOffset(10, 10, 10, 10);
+        layout.spacing = 6;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        // Entry container (abilities get instantiated here at runtime)
+        var container = new GameObject("AbilityEntries");
+        container.transform.SetParent(panel.transform, false);
+        var containerRect = container.AddComponent<RectTransform>();
+        containerRect.anchorMin = Vector2.zero;
+        containerRect.anchorMax = Vector2.one;
+        var containerLayout = container.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+        containerLayout.spacing = 6;
+        containerLayout.childForceExpandWidth = true;
+        containerLayout.childForceExpandHeight = false;
+
+        // Cancel button
+        var cancelBtn = MakeMenuButton("Cancel", panel.transform, new Color(0.5f, 0.3f, 0.3f));
+
+        // Ability entry prefab (saved as asset)
+        var entryPrefab = CreateAbilityEntryPrefab();
+
+        // Add AbilityMenuUI component
+        var abilityMenuComp = AddComponentByName(panel, "IsoRPG.UI.AbilityMenuUI");
+        if (abilityMenuComp != null)
+        {
+            var so = new SerializedObject(abilityMenuComp);
+            SetRef(so, "abilityEntryPrefab", entryPrefab);
+            SetRef(so, "entryContainer", container.transform);
+            SetRef(so, "cancelButton", cancelBtn.GetComponent<UnityEngine.UI.Button>());
+            so.ApplyModifiedProperties();
+        }
+
+        panel.SetActive(false); // hidden until Act is selected
+        return panel;
+    }
+
+    static GameObject CreateAbilityEntryPrefab()
+    {
+        var entry = new GameObject("AbilityEntry");
+        var rect = entry.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(200, 40);
+
+        var img = entry.AddComponent<UnityEngine.UI.Image>();
+        img.color = new Color(0.15f, 0.15f, 0.22f, 0.9f);
+
+        entry.AddComponent<UnityEngine.UI.Button>();
+
+        // Label
+        var textObj = new GameObject("Label");
+        textObj.transform.SetParent(entry.transform, false);
+        var textRect = textObj.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = new Vector2(8, 2);
+        textRect.offsetMax = new Vector2(-8, -2);
+        var tmp = textObj.AddComponent<TMPro.TextMeshProUGUI>();
+        tmp.text = "Ability";
+        tmp.fontSize = 16;
+        tmp.alignment = TMPro.TextAlignmentOptions.MidlineLeft;
+        tmp.color = Color.white;
+
+        string dir = "Assets/Prefabs/UI";
+        EnsureFolder(dir);
+        var prefab = PrefabUtility.SaveAsPrefabAsset(entry, dir + "/AbilityEntryPrefab.prefab");
+        Object.DestroyImmediate(entry);
+        return prefab;
+    }
+
+    static void CreateTurnBanner(Transform parent)
+    {
+        var bannerRoot = new GameObject("TurnBanner");
+        bannerRoot.transform.SetParent(parent, false);
+        AddComponentByName(bannerRoot, "IsoRPG.UI.TurnBannerUI");
+
+        var bannerPanel = new GameObject("BannerPanel");
+        bannerPanel.transform.SetParent(bannerRoot.transform, false);
+        var rect = bannerPanel.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0, 0.7f);
+        rect.anchorMax = new Vector2(1, 0.78f);
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        var img = bannerPanel.AddComponent<UnityEngine.UI.Image>();
+        img.color = new Color(0.15f, 0.3f, 0.6f, 0.9f);
+
+        var textObj = new GameObject("NameText");
+        textObj.transform.SetParent(bannerPanel.transform, false);
+        var textRect = textObj.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = new Vector2(20, 0);
+        textRect.offsetMax = new Vector2(-20, 0);
+        var tmp = textObj.AddComponent<TMPro.TextMeshProUGUI>();
+        tmp.text = "";
+        tmp.fontSize = 28;
+        tmp.alignment = TMPro.TextAlignmentOptions.Center;
+        tmp.color = Color.white;
+
+        // Wire TurnBannerUI
+        var bannerComp = bannerRoot.GetComponent(FindType("IsoRPG.UI.TurnBannerUI"));
+        if (bannerComp != null)
+        {
+            var so = new SerializedObject(bannerComp);
+            SetRef(so, "bannerRect", rect);
+            SetRef(so, "nameText", tmp);
+            SetRef(so, "backgroundImage", img);
+            so.ApplyModifiedProperties();
+        }
+
+        bannerPanel.SetActive(false);
+    }
+
+    static GameObject MakeMenuButton(string label, Transform parent, Color color)
+    {
+        var btnObj = new GameObject(label + "Button");
+        btnObj.transform.SetParent(parent, false);
+        var rect = btnObj.AddComponent<RectTransform>();
+        rect.sizeDelta = new Vector2(160, 42);
+
+        var img = btnObj.AddComponent<UnityEngine.UI.Image>();
+        img.color = color;
+
+        var btn = btnObj.AddComponent<UnityEngine.UI.Button>();
+        var colors = btn.colors;
+        colors.normalColor = color;
+        colors.highlightedColor = color * 1.3f;
+        colors.pressedColor = color * 0.7f;
+        colors.selectedColor = color * 1.2f;
+        colors.disabledColor = new Color(0.25f, 0.25f, 0.25f, 0.5f);
+        btn.colors = colors;
+
+        var textObj = new GameObject("Text");
+        textObj.transform.SetParent(btnObj.transform, false);
+        var textRect = textObj.AddComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+        var tmp = textObj.AddComponent<TMPro.TextMeshProUGUI>();
+        tmp.text = label;
+        tmp.fontSize = 20;
+        tmp.alignment = TMPro.TextAlignmentOptions.Center;
+        tmp.color = Color.white;
+        tmp.fontStyle = TMPro.FontStyles.Bold;
+
+        return btnObj;
+    }
+
+    static void SetButtonNavigation(GameObject btnObj, GameObject upObj, GameObject downObj)
+    {
+        var btn = btnObj.GetComponent<UnityEngine.UI.Button>();
+        if (btn == null) return;
+
+        var nav = btn.navigation;
+        nav.mode = UnityEngine.UI.Navigation.Mode.Explicit;
+        if (upObj != null) nav.selectOnUp = upObj.GetComponent<UnityEngine.UI.Selectable>();
+        if (downObj != null) nav.selectOnDown = downObj.GetComponent<UnityEngine.UI.Selectable>();
+        btn.navigation = nav;
     }
 
     // --- Component helpers (reflection-based to avoid asmdef deps) ---
