@@ -117,25 +117,26 @@ namespace IsoRPG.Battle
                 }
             }
 
-            // Return only tiles the unit can actually stop on
-            var stoppable = new Dictionary<Vector2Int, PathNode>();
-            foreach (var kvp in visited)
-            {
-                if (kvp.Value.CanStop)
-                    stoppable[kvp.Key] = kvp.Value;
-            }
-
-            return stoppable;
+            return new PathfindingResult(visited);
         }
 
         /// <summary>
-        /// Reconstruct the path from start to target using visited node data.
-        /// Uses the full visited set (including non-stoppable tiles) for path reconstruction.
+        /// Reconstruct the path from start to target.
+        /// Uses the full visited set (including non-stoppable ally tiles) for reconstruction.
         /// </summary>
-        /// <param name="visited">Visited nodes from GetReachableTiles (stoppable only).</param>
+        /// <param name="result">Pathfinding result from GetReachableTiles.</param>
         /// <param name="start">Starting grid position.</param>
-        /// <param name="target">Target grid position.</param>
+        /// <param name="target">Target grid position (must be in StoppableTiles).</param>
         /// <returns>Ordered list of positions from start (exclusive) to target (inclusive), or null if unreachable.</returns>
+        public static List<Vector2Int> ReconstructPath(
+            PathfindingResult result, Vector2Int start, Vector2Int target)
+        {
+            return ReconstructPath(result.AllVisited, start, target);
+        }
+
+        /// <summary>
+        /// Reconstruct path from a raw visited dictionary. Prefer the PathfindingResult overload.
+        /// </summary>
         public static List<Vector2Int> ReconstructPath(
             Dictionary<Vector2Int, PathNode> visited, Vector2Int start, Vector2Int target)
         {
@@ -161,5 +162,36 @@ namespace IsoRPG.Battle
             path.Reverse();
             return path;
         }
+    }
+
+    /// <summary>
+    /// Result of a pathfinding query. Contains both the full visited set
+    /// (needed for path reconstruction through ally tiles) and the stoppable
+    /// subset (tiles the unit can actually end their movement on).
+    /// </summary>
+    public class PathfindingResult
+    {
+        /// <summary>All visited tiles including non-stoppable ally-occupied tiles.</summary>
+        public Dictionary<Vector2Int, PathNode> AllVisited { get; }
+
+        /// <summary>Only tiles the unit can stop on (excludes ally-occupied tiles).</summary>
+        public Dictionary<Vector2Int, PathNode> StoppableTiles { get; }
+
+        public PathfindingResult(Dictionary<Vector2Int, PathNode> allVisited)
+        {
+            AllVisited = allVisited;
+            StoppableTiles = new Dictionary<Vector2Int, PathNode>();
+            foreach (var kvp in allVisited)
+            {
+                if (kvp.Value.CanStop)
+                    StoppableTiles[kvp.Key] = kvp.Value;
+            }
+        }
+
+        /// <summary>Check if a tile is reachable and stoppable.</summary>
+        public bool CanMoveTo(Vector2Int pos) => StoppableTiles.ContainsKey(pos);
+
+        /// <summary>Check if a tile was visited during pathfinding (even if not stoppable).</summary>
+        public bool WasVisited(Vector2Int pos) => AllVisited.ContainsKey(pos);
     }
 }

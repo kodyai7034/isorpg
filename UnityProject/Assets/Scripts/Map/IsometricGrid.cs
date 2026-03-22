@@ -197,7 +197,7 @@ namespace IsoRPG.Map
         private void HandleMouseClick()
         {
             if (!Input.GetMouseButtonDown(0)) return;
-            if (!mapData.InBounds(_hoveredTile)) return;
+            if (mapData == null || !mapData.InBounds(_hoveredTile)) return;
 
             OnTileClicked?.Invoke(_hoveredTile);
         }

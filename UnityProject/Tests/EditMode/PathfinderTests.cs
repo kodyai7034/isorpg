@@ -23,12 +23,12 @@ namespace IsoRPG.Tests
             unit.Stats = new ComputedStats { Move = 3, Jump = 3, Speed = 5, MaxHP = 100 };
             unit.CurrentHP = 100;
 
-            var reachable = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
+            var result = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
 
-            Assert.IsTrue(reachable.ContainsKey(new Vector2Int(5, 5)));   // start
-            Assert.IsTrue(reachable.ContainsKey(new Vector2Int(5, 6)));   // 1 away
-            Assert.IsTrue(reachable.ContainsKey(new Vector2Int(5, 8)));   // 3 away
-            Assert.IsFalse(reachable.ContainsKey(new Vector2Int(5, 9)));  // 4 away
+            Assert.IsTrue(result.CanMoveTo(new Vector2Int(5, 5)));   // start
+            Assert.IsTrue(result.CanMoveTo(new Vector2Int(5, 6)));   // 1 away
+            Assert.IsTrue(result.CanMoveTo(new Vector2Int(5, 8)));   // 3 away
+            Assert.IsFalse(result.CanMoveTo(new Vector2Int(5, 9)));  // 4 away
         }
 
         [Test]
@@ -41,8 +41,8 @@ namespace IsoRPG.Tests
             unit.Stats = new ComputedStats { Move = 4, Jump = 3, Speed = 5, MaxHP = 100 };
             unit.CurrentHP = 100;
 
-            var reachable = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
-            Assert.IsFalse(reachable.ContainsKey(new Vector2Int(2, 2)));
+            var result = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
+            Assert.IsFalse(result.CanMoveTo(new Vector2Int(2, 2)));
         }
 
         [Test]
@@ -55,8 +55,8 @@ namespace IsoRPG.Tests
             unit.Stats = new ComputedStats { Move = 4, Jump = 2, Speed = 5, MaxHP = 100 };
             unit.CurrentHP = 100;
 
-            var reachable = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
-            Assert.IsFalse(reachable.ContainsKey(new Vector2Int(2, 2)));
+            var result = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
+            Assert.IsFalse(result.CanMoveTo(new Vector2Int(2, 2)));
         }
 
         [Test]
@@ -72,9 +72,9 @@ namespace IsoRPG.Tests
             enemy.CurrentHP = 100;
 
             var allUnits = new List<UnitInstance> { player, enemy };
-            var reachable = Pathfinder.GetReachableTiles(map, player, allUnits);
+            var result = Pathfinder.GetReachableTiles(map, player, allUnits);
 
-            Assert.IsFalse(reachable.ContainsKey(new Vector2Int(1, 0)));
+            Assert.IsFalse(result.CanMoveTo(new Vector2Int(1, 0)));
         }
 
         [Test]
@@ -85,8 +85,8 @@ namespace IsoRPG.Tests
             unit.Stats = new ComputedStats { Move = 10, Jump = 3, Speed = 5, MaxHP = 100 };
             unit.CurrentHP = 100;
 
-            var reachable = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
-            var path = Pathfinder.ReconstructPath(reachable, new Vector2Int(0, 0), new Vector2Int(2, 2));
+            var result = Pathfinder.GetReachableTiles(map, unit, new List<UnitInstance> { unit });
+            var path = Pathfinder.ReconstructPath(result, new Vector2Int(0, 0), new Vector2Int(2, 2));
 
             Assert.IsNotNull(path);
             Assert.AreEqual(new Vector2Int(2, 2), path[path.Count - 1]);
