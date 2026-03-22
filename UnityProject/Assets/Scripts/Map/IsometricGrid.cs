@@ -113,8 +113,10 @@ namespace IsoRPG.Map
                         if (defaultMaterial != null)
                             renderer.sharedMaterial = defaultMaterial;
 
+                        var terrainColor = GetTerrainColor(tileData.Terrain);
                         var propBlock = new MaterialPropertyBlock();
-                        propBlock.SetColor("_BaseColor", GetTerrainColor(tileData.Terrain));
+                        propBlock.SetColor("_Color", terrainColor);      // built-in shader
+                        propBlock.SetColor("_BaseColor", terrainColor);  // URP shader
                         renderer.SetPropertyBlock(propBlock);
                     }
 
