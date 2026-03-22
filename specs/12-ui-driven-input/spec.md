@@ -112,7 +112,119 @@ Exit:
 
 ---
 
-## 5. Turn Transition UI
+## 5. Selection Context UI
+
+### Problem
+When the player enters tile selection mode (choosing a move destination or attack target), the action/combat menus hide. The player needs:
+1. To know WHAT they're selecting ("Select move target" vs "Select attack target")
+2. A way to CANCEL without right-clicking (mouse-primary, fully accessible)
+3. Context info about the current selection (ability name, range, etc.)
+
+### SelectionContextUI (New Component)
+
+A reusable contextual panel that appears during any tile selection state. Driven entirely by GameEvents — no direct references from battle states.
+
+```csharp
+public class SelectionContextUI : MonoBehaviour
+{
+    // Shows: context label + Cancel button
+    // Subscribes to ShowSelectionContext / HideSelectionContext
+    // Cancel button raises SelectionCancelled event
+}
+```
+
+### Events
+
+```
+// Request (battle states → UI)
+GameEvents.ShowSelectionContext(SelectionContextArgs)
+GameEvents.HideSelectionContext()
+
+// Response (UI → battle states)
+GameEvents.SelectionCancelled()
+```
+
+### SelectionContextArgs
+
+```csharp
+public readonly struct SelectionContextArgs
+{
+    public readonly string Label;          // "Select move target" or "Attack: select enemy"
+    public readonly string Sublabel;       // "Right-click to cancel" or ability range info
+    public readonly SelectionMode Mode;    // Move, Attack, Heal — determines panel color
+}
+
+public enum SelectionMode { Move, Attack, Heal }
+```
+
+### Visual Design
+- Appears in bottom-right (same area as action menu, replaces it during selection)
+- Shows context label (e.g., "Select move destination")
+- Shows sublabel (e.g., "Right-click or Cancel to go back")
+- Cancel button with hover/press feedback
+- Panel color tinted by mode: blue for Move, red for Attack, green for Heal
+- Slides in/out with animation (same as other menus)
+
+### State Integration
+
+**MoveTargetState:**
+```
+Enter:
+  - Show movement range overlay
+  - Raise ShowSelectionContext("Select move destination", "Right-click to cancel", Move)
+  - Subscribe to SelectionCancelled
+
+Execute:
+  - Path preview on hover
+  - Left-click valid tile → move
+  - Right-click → cancel (same as SelectionCancelled)
+  - SelectionCancelled → clear overlays → SelectActionState
+
+Exit:
+  - Raise HideSelectionContext
+  - Clear overlays
+```
+
+**ActionTargetState:**
+```
+Enter:
+  - Show attack range overlay
+  - Raise ShowSelectionContext("Attack: select target", "Right-click to cancel", Attack)
+  - Subscribe to SelectionCancelled
+
+Execute:
+  - Left-click valid target → attack
+  - Right-click → cancel
+  - SelectionCancelled → clear overlays → CombatMenuState
+
+Exit:
+  - Raise HideSelectionContext
+  - Clear overlays
+```
+
+### Extensibility
+This pattern works for ANY future selection mode:
+- Heal target selection (green tint, "Select ally to heal")
+- AoE placement ("Place area effect")
+- Item use targeting
+- Summon placement
+
+New selection types only need to raise ShowSelectionContext with appropriate args — no UI code changes needed.
+
+---
+
+## 5b. Combat Menu Flow (Act Sub-Menu)
+
+When player clicks Act in the action menu:
+1. **CombatMenuState** shows Attack / Skills / Skip / Cancel
+2. **Attack** → ActionTargetState (basic melee, range 1)
+3. **Skills** → SelectAbilityState (shows Fire, Cure, Poison Strike)
+4. **Skip** → marks action done, returns to action menu with Act greyed
+5. **Cancel** → returns to action menu
+
+---
+
+
 
 ### TurnBannerUI (New)
 When a unit's turn starts:
@@ -224,24 +336,32 @@ Final Fantasy Tactics aesthetic
 |-------|-------------------|-------------------|
 | SelectActionState | `Input.GetKeyDown(M/A/W/U)` | Subscribe to GameEvents, Execute is empty |
 | SelectAbilityState | `Input.GetKeyDown(1-4/Esc)` | Subscribe to GameEvents, Execute is empty |
-| MoveTargetState | `Input.GetKeyDown(Esc)` | Right-click only + tile click events |
-| ActionTargetState | `Input.GetKeyDown(Esc)` | Right-click only + tile click events |
+| MoveTargetState | `Input.GetKeyDown(Esc)` | Right-click + SelectionContextUI cancel button + SelectionCancelled event |
+| ActionTargetState | `Input.GetKeyDown(Esc)` | Right-click + SelectionContextUI cancel button + SelectionCancelled event |
 
 ---
 
 ## 10. Tasks
 
-- [ ] 12.1 Create UIAnimator utility (SlideIn, SlideOut, PunchScale, PulseAlpha)
-- [ ] 12.2 Create SFXManager singleton (null-safe, graceful skip)
-- [ ] 12.3 Create TurnBannerUI (slide-in name banner on turn start)
-- [ ] 12.4 Rework ActionMenuUI — slide animation, hover/press feedback, audio hooks
-- [ ] 12.5 Rework AbilityMenuUI — slide animation, MP gating visual, audio hooks
-- [ ] 12.6 Rewrite SelectActionState — remove all Input.GetKeyDown, event-only
-- [ ] 12.7 Rewrite SelectAbilityState — remove all Input.GetKeyDown, event-only
-- [ ] 12.8 Update MoveTargetState — remove Escape key, right-click only
-- [ ] 12.9 Update ActionTargetState — remove Escape key, right-click only
-- [ ] 12.10 Update QuickSetup — create visible, functional UI with all components
-- [ ] 12.11 Add tile overlay pulsing animation (breathing effect)
-- [ ] 12.12 Generate menu art via Gemini (panel BG, buttons, icons)
-- [ ] 12.13 Generate placeholder SFX (or source free clips)
-- [ ] 12.14 Integration test — full battle playable with mouse only
+### Done
+- [x] 12.1 Create UIAnimator utility (SlideIn, SlideOut, PunchScale, PulseAlpha)
+- [x] 12.2 Create SFXManager singleton (null-safe, graceful skip)
+- [x] 12.3 Create TurnBannerUI (slide-in name banner on turn start)
+- [x] 12.4 Rework ActionMenuUI — slide animation, hover/press feedback, audio hooks
+- [x] 12.5 Rework AbilityMenuUI — slide animation, MP gating visual, audio hooks
+- [x] 12.6 Rewrite SelectActionState — event-only, routes to CombatMenuState
+- [x] 12.7 Rewrite SelectAbilityState — event-only
+- [x] 12.8 Update MoveTargetState — remove Escape key, right-click cancel
+- [x] 12.9 Update ActionTargetState — remove Escape key, right-click cancel
+- [x] 12.10 Create CombatMenuUI + CombatMenuState (Attack/Skills/Skip/Cancel)
+- [x] 12.11 Update QuickSetup with all UI components
+
+### Remaining
+- [ ] 12.12 Create SelectionContextUI — contextual panel during tile selection (label + cancel button), driven by GameEvents.ShowSelectionContext/HideSelectionContext/SelectionCancelled
+- [ ] 12.13 Integrate SelectionContextUI into MoveTargetState and ActionTargetState
+- [ ] 12.14 Add GameEvents: ShowSelectionContext, HideSelectionContext, SelectionCancelled + SelectionContextArgs + SelectionMode enum
+- [ ] 12.15 Update QuickSetup to create SelectionContextUI
+- [ ] 12.16 Add tile overlay pulsing animation (breathing effect)
+- [ ] 12.17 Generate menu art via Gemini (panel BG, buttons, icons)
+- [ ] 12.18 Generate placeholder SFX (or source free clips)
+- [ ] 12.19 Integration test — full battle playable with mouse only

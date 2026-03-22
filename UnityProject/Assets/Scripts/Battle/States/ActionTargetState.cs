@@ -7,12 +7,16 @@ namespace IsoRPG.Battle.States
 {
     /// <summary>
     /// Player selects a target for the chosen ability.
-    /// Shows ability range overlay (red tiles). Left-click to confirm, right-click to cancel. No keyboard.
+    /// Shows ability range overlay and SelectionContextUI with Cancel button.
+    /// Left-click valid target confirms. Right-click or Cancel button cancels.
     /// </summary>
     public class ActionTargetState : IState<BattleContext>
     {
         private readonly AbilityData _ability;
         private List<Vector2Int> _targetableTiles;
+        private IStateMachine<BattleContext> _machine;
+        private BattleContext _ctx;
+        private bool _actionTaken;
 
         public ActionTargetState(AbilityData ability)
         {
@@ -21,24 +25,40 @@ namespace IsoRPG.Battle.States
 
         public void Enter(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
-            // Calculate targetable tiles
+            _ctx = ctx;
+            _machine = machine;
+            _actionTaken = false;
+
             _targetableTiles = LineOfSight.GetTargetableTiles(
                 ctx.Map, ctx.ActiveUnit.GridPosition,
                 _ability.Range, _ability.RequiresLineOfSight);
 
-            // Show attack range overlay
             ctx.Grid.SetTileOverlay(_targetableTiles, TileVisualState.AttackRange);
+
+            // Show selection context
+            var mode = _ability.IsHealing ? SelectionMode.Heal : SelectionMode.Attack;
+            string label = _ability.IsHealing
+                ? $"{_ability.AbilityName}: select ally"
+                : $"{_ability.AbilityName}: select target";
+
+            GameEvents.HideCombatMenu.Raise();
+            GameEvents.HideAbilityMenu.Raise();
+            GameEvents.ShowSelectionContext.Raise(new SelectionContextArgs(
+                label, "Right-click or Cancel to go back", mode));
+
+            GameEvents.SelectionCancelled.Subscribe(OnCancelled);
 
             Debug.Log($"[Target] {_ability.AbilityName}: select target ({_targetableTiles.Count} tiles in range)");
         }
 
         public void Execute(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
-            // Cancel
+            if (_actionTaken) return;
+
+            // Right-click cancel
             if (Input.GetMouseButtonDown(1))
             {
-                ctx.Grid.ClearAllOverlays();
-                machine.ChangeState(new SelectAbilityState());
+                OnCancelled();
                 return;
             }
 
@@ -47,33 +67,38 @@ namespace IsoRPG.Battle.States
             {
                 var hovered = ctx.Grid.HoveredTile;
                 if (hovered.x < 0) return;
-
-                // Check if tile is in range
                 if (!_targetableTiles.Contains(hovered)) return;
 
-                // Find target unit at tile
                 var target = ctx.Registry.GetAtPosition(hovered);
 
                 if (_ability.IsHealing)
                 {
-                    // Healing: target must be a living ally
                     if (target == null || target.Team != ctx.ActiveUnit.Team) return;
                 }
                 else
                 {
-                    // Damage: target must be a living enemy
                     if (target == null || target.Team == ctx.ActiveUnit.Team) return;
                 }
 
-                // Create and execute command
-                ctx.Grid.ClearAllOverlays();
+                _actionTaken = true;
+                SFXManager.Instance?.PlayConfirm();
                 machine.ChangeState(new PerformActionState(_ability, target));
             }
         }
 
         public void Exit(BattleContext ctx)
         {
+            GameEvents.SelectionCancelled.Unsubscribe(OnCancelled);
+            GameEvents.HideSelectionContext.Raise();
             ctx.Grid.ClearAllOverlays();
+        }
+
+        private void OnCancelled()
+        {
+            if (_actionTaken) return;
+            _actionTaken = true;
+            SFXManager.Instance?.PlayCancel();
+            _machine.ChangeState(new CombatMenuState());
         }
     }
 }

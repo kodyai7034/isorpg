@@ -153,6 +153,9 @@ public static class QuickSetup
         // --- Skills Menu ---
         var abilityMenu = CreateAbilityMenuUI(canvasObj.transform);
 
+        // --- Selection Context (shown during tile selection) ---
+        CreateSelectionContextUI(canvasObj.transform);
+
         // --- Turn Banner ---
         CreateTurnBanner(canvasObj.transform);
 
@@ -348,6 +351,70 @@ public static class QuickSetup
         var prefab = PrefabUtility.SaveAsPrefabAsset(entry, dir + "/AbilityEntryPrefab.prefab");
         Object.DestroyImmediate(entry);
         return prefab;
+    }
+
+    static void CreateSelectionContextUI(Transform parent)
+    {
+        var panel = new GameObject("SelectionContext");
+        panel.transform.SetParent(parent, false);
+        var panelRect = panel.AddComponent<RectTransform>();
+        panelRect.anchorMin = new Vector2(1, 0);
+        panelRect.anchorMax = new Vector2(1, 0);
+        panelRect.pivot = new Vector2(1, 0);
+        panelRect.anchoredPosition = new Vector2(-20, 20);
+        panelRect.sizeDelta = new Vector2(240, 130);
+
+        var panelImg = panel.AddComponent<UnityEngine.UI.Image>();
+        panelImg.color = new Color(0.12f, 0.2f, 0.4f, 0.92f);
+
+        var layout = panel.AddComponent<UnityEngine.UI.VerticalLayoutGroup>();
+        layout.padding = new RectOffset(12, 12, 12, 12);
+        layout.spacing = 8;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childAlignment = TextAnchor.UpperCenter;
+
+        // Label
+        var labelObj = new GameObject("Label");
+        labelObj.transform.SetParent(panel.transform, false);
+        var labelRect = labelObj.AddComponent<RectTransform>();
+        labelRect.sizeDelta = new Vector2(216, 30);
+        var labelLayout = labelObj.AddComponent<UnityEngine.UI.LayoutElement>();
+        labelLayout.preferredHeight = 30;
+        var labelTmp = labelObj.AddComponent<TMPro.TextMeshProUGUI>();
+        labelTmp.text = "Select target";
+        labelTmp.fontSize = 20;
+        labelTmp.fontStyle = TMPro.FontStyles.Bold;
+        labelTmp.alignment = TMPro.TextAlignmentOptions.Center;
+        labelTmp.color = Color.white;
+
+        // Sublabel
+        var subObj = new GameObject("Sublabel");
+        subObj.transform.SetParent(panel.transform, false);
+        var subRect = subObj.AddComponent<RectTransform>();
+        subRect.sizeDelta = new Vector2(216, 22);
+        var subLayout = subObj.AddComponent<UnityEngine.UI.LayoutElement>();
+        subLayout.preferredHeight = 22;
+        var subTmp = subObj.AddComponent<TMPro.TextMeshProUGUI>();
+        subTmp.text = "Right-click or Cancel to go back";
+        subTmp.fontSize = 14;
+        subTmp.alignment = TMPro.TextAlignmentOptions.Center;
+        subTmp.color = new Color(0.7f, 0.7f, 0.7f);
+
+        // Cancel button
+        var cancelBtn = MakeMenuButton("Cancel", panel.transform, new Color(0.5f, 0.3f, 0.25f));
+
+        // Add component
+        var comp = AddComponentByName(panel, "IsoRPG.UI.SelectionContextUI");
+        if (comp != null)
+        {
+            var so = new SerializedObject(comp);
+            SetRef(so, "labelText", labelTmp);
+            SetRef(so, "sublabelText", subTmp);
+            SetRef(so, "cancelButton", cancelBtn.GetComponent<UnityEngine.UI.Button>());
+            SetRef(so, "panelBackground", panelImg);
+            so.ApplyModifiedProperties();
+        }
     }
 
     static void CreateTurnBanner(Transform parent)

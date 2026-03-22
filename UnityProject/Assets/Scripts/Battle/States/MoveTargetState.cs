@@ -5,24 +5,41 @@ namespace IsoRPG.Battle.States
 {
     /// <summary>
     /// Player selects a destination tile for movement.
-    /// Shows movement range overlay and path preview on hover.
-    /// Left-click confirms, right-click cancels. No keyboard input.
+    /// Shows movement range overlay, path preview on hover, and SelectionContextUI.
+    /// Left-click confirms. Right-click or Cancel button cancels.
     /// </summary>
     public class MoveTargetState : IState<BattleContext>
     {
         private PathfindingResult _result;
+        private IStateMachine<BattleContext> _machine;
+        private BattleContext _ctx;
+        private bool _actionTaken;
 
         public void Enter(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
+            _ctx = ctx;
+            _machine = machine;
+            _actionTaken = false;
+
             _result = ctx.MovementController.ShowMovementRange(
                 ctx.ActiveUnit, ctx.Map, ctx.AllUnits, ctx.Grid);
 
+            // Show selection context UI
             GameEvents.HideActionMenu.Raise();
-            Debug.Log($"[Move] {ctx.ActiveUnit.Name}: click a blue tile to move (right-click to cancel)");
+            GameEvents.ShowSelectionContext.Raise(new SelectionContextArgs(
+                "Select move destination",
+                "Right-click or Cancel to go back",
+                SelectionMode.Move));
+
+            GameEvents.SelectionCancelled.Subscribe(OnCancelled);
+
+            Debug.Log($"[Move] {ctx.ActiveUnit.Name}: select destination");
         }
 
         public void Execute(BattleContext ctx, IStateMachine<BattleContext> machine)
         {
+            if (_actionTaken) return;
+
             // Path preview on hover
             var hovered = ctx.Grid.HoveredTile;
             if (hovered.x >= 0)
@@ -30,11 +47,10 @@ namespace IsoRPG.Battle.States
                 ctx.MovementController.PreviewPathTo(ctx.Grid, ctx.ActiveUnit.GridPosition, hovered);
             }
 
-            // Cancel
+            // Right-click cancel
             if (Input.GetMouseButtonDown(1))
             {
-                ctx.MovementController.ClearOverlays(ctx.Grid);
-                machine.ChangeState(new SelectActionState());
+                OnCancelled();
                 return;
             }
 
@@ -48,9 +64,9 @@ namespace IsoRPG.Battle.States
 
                     if (cmd != null)
                     {
-                        ctx.MovementController.ClearOverlays(ctx.Grid);
+                        _actionTaken = true;
+                        SFXManager.Instance?.PlayConfirm();
                         machine.ChangeState(new PerformMoveState(cmd));
-                        return;
                     }
                 }
             }
@@ -58,7 +74,17 @@ namespace IsoRPG.Battle.States
 
         public void Exit(BattleContext ctx)
         {
+            GameEvents.SelectionCancelled.Unsubscribe(OnCancelled);
+            GameEvents.HideSelectionContext.Raise();
             ctx.MovementController.ClearOverlays(ctx.Grid);
+        }
+
+        private void OnCancelled()
+        {
+            if (_actionTaken) return;
+            _actionTaken = true;
+            SFXManager.Instance?.PlayCancel();
+            _machine.ChangeState(new SelectActionState());
         }
     }
 }

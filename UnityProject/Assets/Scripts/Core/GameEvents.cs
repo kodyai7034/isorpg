@@ -41,6 +41,10 @@ namespace IsoRPG.Core
         // Skills menu
         public static readonly GameEvent<AbilityData> AbilitySelected = new();
         public static readonly GameEvent AbilitySelectionCancelled = new();
+        // Selection context (tile selection states)
+        public static readonly GameEvent<SelectionContextArgs> ShowSelectionContext = new();
+        public static readonly GameEvent HideSelectionContext = new();
+        public static readonly GameEvent SelectionCancelled = new();
 
         // --- Commands ---
         public static readonly GameEvent<ICommand> CommandExecuted = new();
@@ -60,6 +64,8 @@ namespace IsoRPG.Core
             CombatAttackSelected.Clear(); CombatSkillsSelected.Clear();
             CombatSkipSelected.Clear(); CombatCancelled.Clear();
             AbilitySelected.Clear(); AbilitySelectionCancelled.Clear();
+            ShowSelectionContext.Clear(); HideSelectionContext.Clear();
+            SelectionCancelled.Clear();
             CommandExecuted.Clear(); CommandUndone.Clear();
         }
     }

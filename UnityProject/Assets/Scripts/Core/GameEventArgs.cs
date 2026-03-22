@@ -196,4 +196,33 @@ namespace IsoRPG.Core
             CurrentMP = currentMP;
         }
     }
+
+    /// <summary>Selection mode determines the visual style of the selection context panel.</summary>
+    public enum SelectionMode
+    {
+        /// <summary>Blue tint — selecting movement destination.</summary>
+        Move,
+        /// <summary>Red tint — selecting attack target.</summary>
+        Attack,
+        /// <summary>Green tint — selecting ally to heal.</summary>
+        Heal
+    }
+
+    /// <summary>Request to show contextual UI during tile selection.</summary>
+    public readonly struct SelectionContextArgs
+    {
+        /// <summary>Primary label (e.g., "Select move destination").</summary>
+        public readonly string Label;
+        /// <summary>Secondary hint (e.g., "Right-click or Cancel to go back").</summary>
+        public readonly string Sublabel;
+        /// <summary>Visual mode — determines panel color tint.</summary>
+        public readonly SelectionMode Mode;
+
+        public SelectionContextArgs(string label, string sublabel, SelectionMode mode)
+        {
+            Label = label;
+            Sublabel = sublabel;
+            Mode = mode;
+        }
+    }
 }
