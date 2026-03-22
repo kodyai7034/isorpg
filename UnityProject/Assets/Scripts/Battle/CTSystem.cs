@@ -10,8 +10,8 @@ namespace IsoRPG.Battle
     /// </summary>
     public static class CTSystem
     {
-        public const int TurnThreshold = 100;
-        public const int MaxCTAfterAction = 60;
+        public const int TurnThreshold = GameConstants.CTThreshold;
+        public const int MaxCTAfterAction = GameConstants.MaxCTAfterAction;
 
         /// <summary>
         /// Advance CT for all living units until someone reaches the threshold.
@@ -22,7 +22,7 @@ namespace IsoRPG.Battle
             var living = units.Where(u => u.IsAlive).ToList();
             if (living.Count == 0) return null;
 
-            while (true)
+            for (int tick = 0; tick < GameConstants.CTTickSafetyLimit; tick++)
             {
                 foreach (var unit in living)
                 {
@@ -30,7 +30,7 @@ namespace IsoRPG.Battle
                 }
 
                 var ready = living
-                    .Where(u => u.CT >= TurnThreshold)
+                    .Where(u => u.CT >= GameConstants.CTThreshold)
                     .OrderByDescending(u => u.CT)
                     .ThenByDescending(u => u.Stats.Speed)
                     .FirstOrDefault();
@@ -38,6 +38,9 @@ namespace IsoRPG.Battle
                 if (ready != null)
                     return ready;
             }
+
+            UnityEngine.Debug.LogError("[CTSystem] Safety limit reached — no unit gained a turn. Check Speed values.");
+            return living.FirstOrDefault();
         }
 
         /// <summary>
