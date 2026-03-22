@@ -1,4 +1,5 @@
 using UnityEngine;
+using EntityId = IsoRPG.Core.EntityId;
 
 namespace IsoRPG.Core
 {

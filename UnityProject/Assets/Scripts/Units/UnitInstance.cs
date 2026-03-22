@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using IsoRPG.Core;
+using EntityId = IsoRPG.Core.EntityId;
 
 namespace IsoRPG.Units
 {
