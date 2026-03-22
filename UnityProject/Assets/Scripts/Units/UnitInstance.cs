@@ -19,7 +19,9 @@ namespace IsoRPG.Units
         public int Defense, MagicDefense;
 
         /// <summary>
-        /// Placeholder stat generation from level. Will be replaced by job+equipment calculation in System 9.
+        /// Generate base stats from level, brave, and faith.
+        /// Brave influences physical attack; Faith influences magic attack.
+        /// JobSystem.RecalculateStats applies job multipliers and equipment on top.
         /// </summary>
         public static ComputedStats FromBase(int level, int brave, int faith)
         {
@@ -27,8 +29,8 @@ namespace IsoRPG.Units
             {
                 MaxHP = 80 + level * 10,
                 MaxMP = 30 + level * 5,
-                PhysicalAttack = 5 + level * 2,
-                MagicAttack = 5 + level * 2,
+                PhysicalAttack = 5 + level * 2 + brave / 20,
+                MagicAttack = 5 + level * 2 + faith / 20,
                 Speed = 6 + level,
                 Move = 4,
                 Jump = 3,

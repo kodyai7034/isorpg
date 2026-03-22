@@ -1,6 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using IsoRPG.Core;
+using IsoRPG.Units;
+using EntityId = IsoRPG.Core.EntityId;
 
 namespace IsoRPG.UI
 {
@@ -8,13 +10,13 @@ namespace IsoRPG.UI
     /// Spawns floating damage/heal numbers over units.
     /// Subscribes to DamageDealt and HealingDealt events.
     /// Numbers float upward and fade out over time.
+    /// Locates unit positions via UnitView.FindByEntityId.
     /// </summary>
     public class DamageNumberUI : MonoBehaviour
     {
         [SerializeField] private GameObject damageNumberPrefab;
         [SerializeField] private float floatSpeed = 1f;
         [SerializeField] private float fadeDuration = 1f;
-        [SerializeField] private Canvas worldSpaceCanvas;
 
         private void OnEnable()
         {
@@ -31,24 +33,20 @@ namespace IsoRPG.UI
         private void OnDamageDealt(DamageDealtArgs args)
         {
             if (args.Amount <= 0) return;
-
-            // Find unit position from registry (or use a position lookup)
-            // For now, spawn at a default position — BattleManager should set up a position resolver
-            SpawnNumber(args.Amount.ToString(), Color.red);
+            var pos = FindUnitWorldPos(args.TargetId);
+            SpawnAt(pos, args.Amount.ToString(), Color.red);
         }
 
         private void OnHealingDealt(HealingDealtArgs args)
         {
             if (args.Amount <= 0) return;
-            SpawnNumber(args.Amount.ToString(), Color.green);
+            var pos = FindUnitWorldPos(args.TargetId);
+            SpawnAt(pos, args.Amount.ToString(), Color.green);
         }
 
         /// <summary>
         /// Spawn a floating damage number at a world position.
         /// </summary>
-        /// <param name="worldPos">World-space position to spawn at.</param>
-        /// <param name="amount">Damage/heal amount.</param>
-        /// <param name="color">Text color (red for damage, green for heal).</param>
         public void SpawnDamageNumber(Vector3 worldPos, int amount, Color color)
         {
             SpawnAt(worldPos, amount.ToString(), color);
@@ -62,22 +60,27 @@ namespace IsoRPG.UI
             SpawnAt(worldPos, "MISS", Color.gray);
         }
 
-        private void SpawnNumber(string text, Color color)
+        private Vector3 FindUnitWorldPos(EntityId targetId)
         {
-            // Without world position, spawn at screen center (placeholder)
-            if (damageNumberPrefab == null) return;
-            var pos = Camera.main != null
-                ? Camera.main.ScreenToWorldPoint(new Vector3(Screen.width / 2f, Screen.height / 2f, 0))
-                : Vector3.zero;
-            SpawnAt(pos, text, color);
+            // Find the UnitView by searching scene — acceptable for infrequent damage events
+            var views = FindObjectsByType<UnitView>(FindObjectsSortMode.None);
+            foreach (var view in views)
+            {
+                if (view.Unit != null && view.Unit.Id == targetId)
+                    return view.transform.position + Vector3.up * 0.3f;
+            }
+
+            // Fallback: screen center
+            if (Camera.main != null)
+                return Camera.main.ScreenToWorldPoint(new Vector3(Screen.width / 2f, Screen.height / 2f, 0));
+            return Vector3.zero;
         }
 
         private void SpawnAt(Vector3 worldPos, string text, Color color)
         {
             if (damageNumberPrefab == null) return;
 
-            var parent = worldSpaceCanvas != null ? worldSpaceCanvas.transform : transform;
-            var go = Instantiate(damageNumberPrefab, parent);
+            var go = Instantiate(damageNumberPrefab, transform);
             go.transform.position = worldPos;
 
             var tmp = go.GetComponentInChildren<TMPro.TextMeshProUGUI>();
@@ -87,7 +90,6 @@ namespace IsoRPG.UI
                 tmp.color = color;
             }
 
-            // Also try TextMeshPro for world-space
             var tmpWorld = go.GetComponentInChildren<TMPro.TextMeshPro>();
             if (tmpWorld != null)
             {
@@ -108,10 +110,8 @@ namespace IsoRPG.UI
                 elapsed += Time.deltaTime;
                 float t = elapsed / fadeDuration;
 
-                // Float upward
                 go.transform.position = startPos + Vector3.up * (floatSpeed * t);
 
-                // Fade out
                 var tmp = go.GetComponentInChildren<TMPro.TextMeshProUGUI>();
                 if (tmp != null)
                 {
